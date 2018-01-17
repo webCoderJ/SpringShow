@@ -1,0 +1,41 @@
+<style lang="less">
+  .avatarShowContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    align-content: space-around;
+    .canvasBox {
+      background-color: #fff;
+      width: 595rpx;
+      height: 525rpx;
+      border-radius: 10rpx;
+      margin-top: 245rpx;
+      position: relative;
+      top: 245rpx;
+      left: 77.5rpx;
+      box-shadow: 5px 5px 5px #ccc;
+    }
+  }
+</style>
+
+<template>
+  <view class="avatarShowContainer">
+    <view class="canvasBox">
+      <canvas style="width: 400px; height: 500px;" canvas-id="secondCanvas"></canvas>
+    </view>
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+export default class Avatar extends wepy.page {
+  config = {
+    navigationBarTitleText: '头像秀'
+  }
+  data = {
+    slicer: [
+      'imgs/slicer_dog.png'
+    ]
+  }
+}
+</script>
