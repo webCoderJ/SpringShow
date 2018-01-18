@@ -53,20 +53,25 @@
 </style>
 
 <template>
-<!-- <view></view> -->
   <view class="avatarShowContainer">
     <view class="canvasBox">
       <canvas class="avatarCanvas zIndex_0" canvas-id="secondCanvas"></canvas>
       <view class="slicerBox zIndex_1">
         <view class="slicerContainer zIndex_2">
            <repeat for="{{ currentSlicer }}" key="index" index="index" item="slicer">
-             <image class="slicerImg borderd" 
-              src="{{ slicer.path }}" 
-              style="transform: translate({{ slicer.x }}px, {{ slicer.y }}px) rotate({{ slicer.rotate }}deg) ;height: {{ slicer.height }}px; width: {{ slicer.width }}px" 
-              mode="scaleToFill"
-              @touchstart="touchStart"
-            >
-            </image>
+             <view class="slicerImgBox">
+              <image class="slicerImg borderd" 
+                src="{{ slicer.path }}" 
+                style="transform: translate({{ slicer.x }}px, {{ slicer.y }}px) rotate({{ slicer.rotate }}deg) ;height: {{ slicer.height }}px; width: {{ slicer.width }}px" 
+                mode="scaleToFill"
+                @touchstart="touchStart"
+                @touchmove="touchMove"
+                @touchend="touchEnd"
+                @pinch="pinch"
+                @rotate="rotate"
+              >
+              </image>
+             </view>
           </repeat>
         </view>
       </view>
@@ -78,16 +83,10 @@
 import wepy from 'wepy'
 import WxTouchEvent from '../utils/wx-touch-event'
 let TouchEvent = new WxTouchEvent()
+console.log(TouchEvent)
 export default class Avatar extends wepy.page {
   config = {
-    navigationBarTitleText: '头像秀'
-  }
-  data = {
-    originSlicer: [],
-    currentSlicer: []
-  }
-  methods = {
-    touchStart: TouchEvent.start.bind(TouchEvent),
+    // navigationBarTitleText: '头像秀'
   }
   onLoad() {
     const _this = this
@@ -105,34 +104,59 @@ export default class Avatar extends wepy.page {
     //   }
     // })
     let slicersPath = [
+      "../imgs/slicer_dog.png",
+      "../imgs/slicer_dog.png",
+      "../imgs/slicer_dog.png",
       "../imgs/slicer_dog.png"
     ]
     _this.$apply(() => {
       // 初始化切片
       // _this.$data.originSlicer = []
       // _this.$data.currentSlicer = []
-      slicersPath.forEach(path => {
+      slicersPath.forEach((path, index) => {
         let slicer = {
           path: path,
           width: '80',
           height: '80',
           rotate: '60',
-          y: '10',
+          y: 20 * index,
           x: '10' 
         }
         _this.originSlicer.push(slicer)
         _this.currentSlicer.push(slicer)
       })
     })
-
     // 绑定事件
     _this.TouchEvent = TouchEvent
     _this.TouchEvent.bind({//初始化后绑定事件
-      touchStart: function(e){
+      touchStart (e){
+        console.log('touchstart',e)
+      },
+      touchMove (e){
+        console.log('touchmove',e)
+      },
+      touchEnd (e){
+        console.log('touchend',e)
+      },
+      rotate (e){
         console.log(e)
+      },
+      pinch (e){
+        console.log('pinch',e)
       }
     })
   }
-  touchStart = TouchEvent.start.bind(TouchEvent)
+  data = {
+    originSlicer: [],
+    currentSlicer: []
+  }
+  methods = {
+    touchStart: TouchEvent.start.bind(TouchEvent),
+    touchMove: TouchEvent.move.bind(TouchEvent),
+    touchEnd: TouchEvent.end.bind(TouchEvent),
+    pinch: TouchEvent.pinch,
+    rotate: TouchEvent.rotate
+  }
+  
 }
 </script>
