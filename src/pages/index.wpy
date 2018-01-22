@@ -1,162 +1,444 @@
 <style lang="less">
-  .avatarShowContainer {
-    height: 100%;
-    width: 100%;
-    .zIndex_0 {
-      z-index: 0;
+.showPage {
+  background-size: 100% auto;
+  background-repeat: no-repeat;
+  background-position: center top;
+}
+.shadow {
+  box-shadow: 10rpx 10rpx 20rpx rgba(100, 100, 100, 0.5);
+}
+.avatarShowContainer {
+  // height: 100%;
+  // width: 100%;
+  .zIndex_0 {
+    z-index: 0;
+  }
+  .zIndex_1 {
+    z-index: 1;
+  }
+  .zIndex_2 {
+    z-index: 2;
+  }
+  .zIndex_3 {
+    z-index: 2;
+  }
+  .zIndex_4 {
+    z-index: 2;
+  }
+  .zIndex_5 {
+    z-index: 2;
+  }
+  .canvasBox {
+    background-color: #fff;
+    opacity: 0.95;
+    border-radius: 10rpx;
+    position: relative;
+    border: 1px solid #ccc;
+    background-size: 100% auto;
+    background-repeat: no-repeat;
+    background-position: center top;
+    .avatarCanvas {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
     }
-    .zIndex_1 {
-      z-index: 1;
+    .canvasReplace {
+      position: absolute;
+      top: 0;
+      left: 0;
     }
-    .zIndex_2 {
-      z-index: 2;
-    }
-    .canvasBox {
-      background-color: #fff;
-      width: 595rpx;
-      height: 525rpx;
-      border-radius: 10rpx;
-      position: relative;
-      top: 245rpx;
-      left: 77.5rpx;
-      box-shadow: 10rpx 0rpx 0rpx #ccc;
-      border: 1px solid #ccc;
-      .avatarCanvas{
+    .slicerBox {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      .slicerContainer {
+        position: relative;
         width: 100%;
         height: 100%;
-        position: absolute;
-        top: 0;
         left: 0;
-      }
-      .slicerBox {
-        position: absolute;
         top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        .slicerContainer {
-          position: relative;
-          width: 100%;
-          height: 100%;
-          left: 0;
-          top: 0;
-          .slicerImg{
-            position: absolute;
-            &.borderd {
-              border: 1px dotted #888;
+        .slicerImgBox {
+          position: absolute;
+          border-radius: 5rpx;
+          &.checked {
+            border: 1px dotted #222;
+          }
+          .slicerImgBoxInner {
+            position: relative;
+            left: 0;
+            top: 0;
+            .slicerImg {
+            }
+            .imgMover {
+              position: absolute;
+              padding: 20rpx;
+              bottom: -38rpx;
+              right: -38rpx;
+            }
+            .imgX {
+              position: absolute;
+              padding: 20rpx;
+              top: -38rpx;
+              right: -38rpx;
             }
           }
         }
       }
     }
   }
+}
+.originSlicerBox {
+  background-color: rgba(245, 214, 166, 0.8);
+  opacity: 0.8;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 5rpx;
+  padding: 5rpx;
+  box-sizing: border-box;
+  white-space: nowrap;
+  .slicerImg {
+    display: inline-block;
+    width: 40rpx;
+    padding: 10rpx;
+    vertical-align: middle;
+  }
+}
+.btnsBox {
+  display: flex;
+  display: -webkit-flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+  .btn {
+    border-radius: 20rpx;
+    padding: 18rpx 32rpx;
+    color: #fff;
+    background-color: #ecc386;
+    font-weight: 600;
+    display: inline-block;
+    font-size: 32rpx;
+  }
+}
 </style>
 
 <template>
-  <view class="avatarShowContainer">
-    <view class="canvasBox">
-      <canvas class="avatarCanvas zIndex_0" canvas-id="secondCanvas"></canvas>
-      <view class="slicerBox zIndex_1">
-        <view class="slicerContainer zIndex_2">
+<view class="showPage" style="width:{{ deviceW }}px; height: {{ deviceH }}px;">
+  <!-- background-image: url('../imgs/avatar_bg.png'); -->
+  <view class="avatarShowContainer" id="BOX-0" style="padding-top: {{ cvsPos.y }}rpx; margin-left: {{ cvsPos.x }}rpx;">
+    <view class="canvasBox shadow" style="width: {{ cvsSize.width }}rpx; height: {{ cvsSize.height }}rpx;background-image: url('{{ userInfo.avatarUrl }}')">
+      <canvas class="avatarCanvas zIndex_0" canvas-id="avatarCanvas" style="z-index: 0!important;display: none;"></canvas>
+      <view class="slicerBox zIndex_2">
+        <view class="slicerContainer zIndex_3">
            <repeat for="{{ currentSlicer }}" key="index" index="index" item="slicer">
-             <view class="slicerImgBox">
-              <image class="slicerImg borderd" 
-                src="{{ slicer.path }}" 
-                style="transform: translate({{ slicer.x }}px, {{ slicer.y }}px) rotate({{ slicer.rotate }}deg) ;height: {{ slicer.height }}px; width: {{ slicer.width }}px" 
-                mode="scaleToFill"
-                @touchstart="touchStart"
-                @touchmove="touchMove"
-                @touchend="touchEnd"
-                @pinch="pinch"
-                @rotate="rotate"
+             <view class="slicerImgBox {{ slicer.checked ? 'checked zIndex_5' : 'zIndex_4'}}" 
+                style="top: {{slicer.y }}px; left:{{ slicer.x }}px; transform: rotate({{ slicer.rotate }}deg); height: {{ slicer.height }}rpx; width: {{ slicer.width }}rpx"
+                id="move-{{ index }}"
+                @touchstart.stop="touchStart"
+                @touchmove.stop="touchMove"
+                @touchend.stop="touchEnd"
               >
-              </image>
+               <view class="slicerImgBoxInner" style="height: {{ slicer.height }}rpx; width: {{ slicer.width }}rpx" >
+                  <image class="slicerImg" 
+                    src="{{ slicer.path }}" 
+                    style="height: {{ slicer.height }}rpx; width: {{ slicer.width }}rpx" 
+                    mode="scaleToFill"
+                  ></image>
+                  <image 
+                    wx:if="{{ slicer.checked }}"
+                    class="imgMover" src="../imgs/icon_move.png" 
+                    style="height: 40rpx; width: 40rpx;" 
+                    mode="scaleToFill"
+                    id="transform-{{ index }}"
+                    @touchstart.stop="touchStart"
+                    @touchmove.stop="touchMove"
+                    @touchend.stop="touchEnd"
+                  ></image>
+                  <image 
+                    wx:if="{{ slicer.checked }}"
+                    class="imgX" src="../imgs/icon_x.png" 
+                    style="height: 40rpx; width: 40rpx;" 
+                    mode="scaleToFill"
+                    id="delete-{{ index }}"
+                    @touchend.stop="xSlicer"
+                  ></image>
+               </view>
              </view>
           </repeat>
         </view>
       </view>
     </view>
   </view>
+  <scroll-view 
+    scroll-x="true"
+    class="originSlicerBox"
+    style="height: 200rpx;width: {{ cvsSize.width }}rpx; margin-left: {{ cvsPos.x }}rpx; margin-top: 50rpx;"
+  >
+    <view>
+      <repeat for="{{ originSlicer }}" key="index" index="index" item="slicer">
+        <image class="slicerImg" 
+          style="width: {{ slicer._width }}rpx;height: {{ slicer._height }}rpx;"
+          src="{{ slicer.path }}"
+          mode="scaleToFill"
+          id="originSlicer-{{ index }}"
+          @tap="chooseSlicer"
+        ></image>
+      </repeat>
+    </view>
+  </scroll-view>
+  <view class="btnsBox"
+    style="margin-left: {{ cvsPos.x }}rpx; margin-top: 60rpx;width: {{ cvsSize.width }}rpx;"
+  >
+    <view class="btn shadow" @tap="chooseImg">上传头像/拍照</view>
+    <view class="btn shadow" @tap="saveToPhone">保存到手机</view>
+  </view>
+</view>
 </template>
 
 <script>
-import wepy from 'wepy'
-import WxTouchEvent from '../utils/wx-touch-event'
-let TouchEvent = new WxTouchEvent()
-console.log(TouchEvent)
+import wepy from "wepy";
+import { touchInfo, string, stringWH, distance, cosDeg, drawAvatar, deepClone } from "../utils/utilJs";
+import WxTouchEvent from "../utils/wx-touch-event";
+let TouchEvent = new WxTouchEvent();
 export default class Avatar extends wepy.page {
   config = {
-    // navigationBarTitleText: '头像秀'
-  }
-  onLoad() {
-    const _this = this
-    console.log(this)
-    // 下载头像到内存
-    // let avatarUrl = ''
-    // await wepy.login()
-    // let userInfo = await wepy.getUserInfo()
-    // this.downloadFile({
-    //   url: userInfo.avatarUrl, 
-    //   success: function (res) {    
-    //     if (res.statusCode === 200) {      
-    //       avatarUrl = res.tempFilePath //这里的地址是指向本地图片 
-    //     }
-    //   }
-    // })
-    let slicersPath = [
-      "../imgs/slicer_dog.png",
-      "../imgs/slicer_dog.png",
-      "../imgs/slicer_dog.png",
-      "../imgs/slicer_dog.png"
-    ]
-    _this.$apply(() => {
-      // 初始化切片
-      // _this.$data.originSlicer = []
-      // _this.$data.currentSlicer = []
-      slicersPath.forEach((path, index) => {
-        let slicer = {
-          path: path,
-          width: '80',
-          height: '80',
-          rotate: '60',
-          y: 20 * index,
-          x: '10' 
-        }
-        _this.originSlicer.push(slicer)
-        _this.currentSlicer.push(slicer)
-      })
-    })
-    // 绑定事件
-    _this.TouchEvent = TouchEvent
-    _this.TouchEvent.bind({//初始化后绑定事件
-      touchStart (e){
-        console.log('touchstart',e)
-      },
-      touchMove (e){
-        console.log('touchmove',e)
-      },
-      touchEnd (e){
-        console.log('touchend',e)
-      },
-      rotate (e){
-        console.log(e)
-      },
-      pinch (e){
-        console.log('pinch',e)
-      }
-    })
-  }
+    // navigationBarTitleText: '头像秀',
+    enablePullDownRefresh: false
+  };
   data = {
+    userInfo: {},
+
+    deviceW: null,
+    deviceH: null,
+
     originSlicer: [],
-    currentSlicer: []
+    currentSlicer: [],
+
+    // cvs位置
+    cvsPos: {
+      x: null,
+      y: null
+    },
+
+    // 定义操作区尺寸
+    cvsSize: {
+      width: 595,
+      height: 525
+    },
+    // 相对坐标
+    coorX: null,
+    coorY: null,
+
+    screenRatio: null
+  };
+  onLoad() {
+    const _this = this;
+    let ctx = _this.ctx = wx.createCanvasContext('avatarCanvas')
+    // 下载头像到内存
+    let avatarUrl = "";
+    wepy.getUserInfo({
+      success: function(res) {
+        console.log(res);
+        var userInfo = _this.userInfo  = res.userInfo;
+        var avatarUrl = userInfo.avatarUrl;
+
+        wepy.downloadFile({
+          url: userInfo.avatarUrl,
+          success: function(res) {
+            if (res.statusCode === 200) {
+              avatarUrl = res.tempFilePath; //这里的地址是指向本地图片
+            }
+          }
+        });
+      }
+    });
+
+    wepy.getSystemInfo({
+      success: function(res) {
+        _this.screenRatio = res.windowWidth / _this.cvsSize.width;
+        _this.cvsPos.x = 77.5;
+        _this.cvsPos.y = 180;
+        _this.deviceW = res.windowWidth;
+        _this.deviceH = res.windowHeight;
+      }
+    });
+    // 初始化切片
+    let slicersPath = [
+      "../imgs/slicer_fu.png",
+      "../imgs/slicer_dog.png",
+      "../imgs/slicer_0.png",
+      "../imgs/slicer_1.png",
+      "../imgs/slicer_2.png",
+      "../imgs/slicer_3.png",
+      "../imgs/slicer_4.png",
+      "../imgs/slicer_5.png",
+      "../imgs/slicer_6.png",
+      "../imgs/slicer_8.png",
+      "../imgs/slicer_9.png"
+    ];
+    slicersPath.forEach((path, index) => {
+      wepy.getImageInfo({
+        src: path,
+        success(data) {
+          let ratio = 160 / data.width;
+          let slicer = {
+            path: path,
+            width: data.width * ratio,
+            height: data.height * ratio,
+            whRatio: data.width * ratio / (data.height * ratio),
+            rotate: 0,
+            x: 0,
+            y: 0,
+            checked: false,
+            _height: data.height * ratio,
+            _width: data.width * ratio,
+            _id: 'id_' + index
+          };
+          _this.originSlicer.push(slicer);
+          // _this.currentSlicer.push(slicer);
+        }
+      });
+    });
+    // 绑定事件
+    _this.TouchEvent = TouchEvent;
+    _this.TouchEvent.bind({
+      //初始化后绑定事件
+      touchStart(e) {
+        // 记录盒子位置
+        _this.coorX = _this.cvsPos.x;
+        _this.coorY = _this.cvsPos.y;
+        console.log("touchStart", e);
+        let eInfo = touchInfo(e);
+        let slicer = _this.currentSlicer[eInfo["index"]];
+        _this.currentSlicer.forEach(item => {
+          item.checked = false
+        })
+        slicer.checked = true
+        // console.log(slicer)
+        if (eInfo.type == "move") {
+        } else if (eInfo.type == "transform") {
+          console.log('box')
+          // 记录中心点坐标
+          slicer.centerX = _this.coorX + slicer.x + slicer.width / 2;
+          slicer.centerY = _this.coorY + slicer.y + slicer.height / 2;
+          slicer.moverX = _this.coorX + slicer.x + slicer.width;
+          slicer.moverY = _this.coorY + slicer.y + slicer.height;
+        }
+        // 记录相对坐标范围
+        _this.minX = 0;
+        _this.minY = 0;
+        _this.maxX = _this.cvsSize.width * _this.screenRatio - slicer.width;
+        _this.maxY = _this.cvsSize.height * _this.screenRatio - slicer.height;
+        // 记录指针在切片内距离
+        slicer.insideX = eInfo.point.pageX - _this.coorX - slicer.x;
+        slicer.insideY = eInfo.point.pageY - _this.coorY - slicer.y;
+      },
+      touchMove(e) {
+        let eInfo = touchInfo(e);
+        let slicer = _this.currentSlicer[eInfo["index"]];
+        console.log("touchmove", e, touchInfo(e))
+        if (eInfo.type == "move") {
+          if (_this.coorX && _this.coorY) {
+            let realtimeX = eInfo.point.pageX - _this.coorX - slicer.insideX;
+            let realtimeY = eInfo.point.pageY - _this.coorY - slicer.insideY;
+
+            console.log(realtimeX, _this.maxX, realtimeY, _this.maxY);
+
+            if (_this.minX <= realtimeX && realtimeX <= _this.maxX) {
+              slicer.x = realtimeX;
+            }
+            if (_this.minY <= realtimeY && realtimeY <= _this.maxY) {
+              slicer.y = realtimeY;
+            }
+          }
+        } else if (eInfo.type == "transform") {
+          slicer.curX = eInfo.point.pageX;
+          slicer.curY = eInfo.point.pageY;
+          // 计算宽高和旋转角度
+          slicer.string = distance(
+            slicer.curX,
+            slicer.curY,
+            slicer.centerX,
+            slicer.centerY
+          );
+          slicer.width = stringWH(slicer)["w"];
+          slicer.height = stringWH(slicer)["h"];
+          let a = distance(
+            slicer.moverX,
+            slicer.moverY,
+            slicer.centerX,
+            slicer.centerY
+          );
+          let b = slicer.string;
+          let c = distance(
+            slicer.moverX,
+            slicer.moverY,
+            slicer.curX,
+            slicer.curY
+          );
+
+          // slicer.rotate = cosDeg(a, b, c);
+          console.log(slicer);
+        }
+      },
+      touchEnd(e) {
+        let eInfo = touchInfo(e);
+        let slicer = _this.currentSlicer[eInfo["index"]];
+        console.log("touchend", e);
+      }
+    });
   }
   methods = {
     touchStart: TouchEvent.start.bind(TouchEvent),
     touchMove: TouchEvent.move.bind(TouchEvent),
     touchEnd: TouchEvent.end.bind(TouchEvent),
-    pinch: TouchEvent.pinch,
-    rotate: TouchEvent.rotate
-  }
-  
+    chooseImg(e) {
+      const _this = this
+      wepy.chooseImage({
+        count: 1,
+        success(res) {
+          _this.ctx.drawImage(res.tempFilePaths[0], 0, 0, _this.cvsSize.width * _this.screenRatio, _this.cvsSize.height * _this.screenRatio)
+          _this.ctx.draw()
+          _this.userInfo.avatarUrl = res.tempFilePaths[0]
+        }
+      });
+    },
+    saveToPhone(e) {
+      const _this = this
+      wx.canvasToTempFilePath({
+        x: 0,
+        y: 0,
+        width: _this.cvsSize.width,
+        height: _this.cvsSize.height,
+        destWidth: _this.cvsSize.width,
+        destHeight: _this.cvsSize.height,
+        canvasId: "avatarCanvas",
+        success: function(res) {
+          wx.saveImageToPhotosAlbum({
+            filePath: res.tempFilePath
+          });
+          wx.showToast({ title: "保存成功" });
+        }
+      });
+    },
+    chooseSlicer(e){
+      const _this = this
+      let eInfo = touchInfo(e);
+      let slicer = _this.originSlicer[eInfo["index"]]
+      _this.currentSlicer.forEach(item => {
+        item.checked = false
+      })
+      let copySlicer = deepClone(slicer)
+      copySlicer.checked = true
+      _this.currentSlicer.push(copySlicer)
+    },
+    xSlicer(e){
+      const _this = this
+      let eInfo = touchInfo(e);
+      // 移除数据
+      _this.currentSlicer = _this.currentSlicer.filter((item, index) => index != eInfo["index"])
+    }
+  };
 }
 </script>
