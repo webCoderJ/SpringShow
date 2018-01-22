@@ -127,13 +127,13 @@
 <view class="showPage" style="width:{{ deviceW }}px; height: {{ deviceH }}px;">
   <!-- background-image: url('../imgs/avatar_bg.png'); -->
   <view class="avatarShowContainer" id="BOX-0" style="padding-top: {{ cvsPos.y }}rpx; margin-left: {{ cvsPos.x }}rpx;">
-    <view class="canvasBox shadow" style="width: {{ cvsSize.width }}rpx; height: {{ cvsSize.height }}rpx;background-image: url('{{ userInfo.avatarUrl }}')">
-      <canvas class="avatarCanvas zIndex_0" canvas-id="avatarCanvas" style="z-index: 0!important;display: none;"></canvas>
-      <view class="slicerBox zIndex_2">
+    <view class="canvasBox shadow" style="width: {{ cvsSize.width }}rpx; height: {{ cvsSize.height }}rpx;">
+      <canvas class="avatarCanvas zIndex_0" canvas-id="avatarCanvas" style="z-index: 0!important;"></canvas>
+      <scroll-view style="width: {{ cvsSize.width }}rpx; height: {{ cvsSize.height }}rpx;" class="slicerBox zIndex_2" >
         <view class="slicerContainer zIndex_3">
            <repeat for="{{ currentSlicer }}" key="index" index="index" item="slicer">
              <view class="slicerImgBox {{ slicer.checked ? 'checked zIndex_5' : 'zIndex_4'}}" 
-                style="top: {{slicer.y }}px; left:{{ slicer.x }}px; transform: rotate({{ slicer.rotate }}deg); height: {{ slicer.height }}rpx; width: {{ slicer.width }}rpx"
+                style="top: {{ slicer.y }}px; left:{{ slicer.x }}px; transform: rotate({{ slicer.rotate }}deg) scale({{ slicer.scale }}); height: {{ slicer.height }}rpx; width: {{ slicer.width }}rpx"
                 id="move-{{ index }}"
                 @touchstart.stop="touchStart"
                 @touchmove.stop="touchMove"
@@ -167,7 +167,7 @@
              </view>
           </repeat>
         </view>
-      </view>
+      </scroll-view>
     </view>
   </view>
   <scroll-view 
@@ -198,7 +198,7 @@
 
 <script>
 import wepy from "wepy";
-import { touchInfo, string, stringWH, distance, cosDeg, drawAvatar, deepClone } from "../utils/utilJs";
+import { touchInfo, string, stringWH, distance, cosDeg, drawAvatar, deepClone, scale } from "../utils/utilJs";
 import WxTouchEvent from "../utils/wx-touch-event";
 let TouchEvent = new WxTouchEvent();
 export default class Avatar extends wepy.page {
@@ -224,13 +224,17 @@ export default class Avatar extends wepy.page {
     // 定义操作区尺寸
     cvsSize: {
       width: 595,
-      height: 525
+      height: 595,
+      ratio: 1
     },
     // 相对坐标
     coorX: null,
     coorY: null,
 
-    screenRatio: null
+    // cavas与屏幕的尺寸比
+    screenRatio: null,
+    // 设计图比
+    designRatio: null
   };
   onLoad() {
     const _this = this;
@@ -240,25 +244,26 @@ export default class Avatar extends wepy.page {
     wepy.getUserInfo({
       success: function(res) {
         console.log(res);
-        var userInfo = _this.userInfo  = res.userInfo;
-        var avatarUrl = userInfo.avatarUrl;
+        // var userInfo = _this.userInfo  = res.userInfo;
+        // var avatarUrl = userInfo.avatarUrl;
 
-        wepy.downloadFile({
-          url: userInfo.avatarUrl,
-          success: function(res) {
-            if (res.statusCode === 200) {
-              avatarUrl = res.tempFilePath; //这里的地址是指向本地图片
-            }
-          }
-        });
+        // wepy.downloadFile({
+        //   url: userInfo.avatarUrl,
+        //   success: function(res) {
+        //     if (res.statusCode === 200) {
+        //       avatarUrl = res.tempFilePath; //这里的地址是指向本地图片
+        //     }
+        //   }
+        // });
       }
     });
 
     wepy.getSystemInfo({
       success: function(res) {
         _this.screenRatio = res.windowWidth / _this.cvsSize.width;
+        _this.designRatio = res.windowWidth / 750
         _this.cvsPos.x = 77.5;
-        _this.cvsPos.y = 180;
+        _this.cvsPos.y = 100;
         _this.deviceW = res.windowWidth;
         _this.deviceH = res.windowHeight;
       }
@@ -281,6 +286,7 @@ export default class Avatar extends wepy.page {
       wepy.getImageInfo({
         src: path,
         success(data) {
+          // 160 是rpx宽度，以750设计图为基准
           let ratio = 160 / data.width;
           let slicer = {
             path: path,
@@ -288,8 +294,9 @@ export default class Avatar extends wepy.page {
             height: data.height * ratio,
             whRatio: data.width * ratio / (data.height * ratio),
             rotate: 0,
-            x: 0,
-            y: 0,
+            scale: 1,
+            x: 10,
+            y: 10,
             checked: false,
             _height: data.height * ratio,
             _width: data.width * ratio,
@@ -311,59 +318,48 @@ export default class Avatar extends wepy.page {
         console.log("touchStart", e);
         let eInfo = touchInfo(e);
         let slicer = _this.currentSlicer[eInfo["index"]];
+
+        // 选中当前添加切片
         _this.currentSlicer.forEach(item => {
           item.checked = false
         })
         slicer.checked = true
-        // console.log(slicer)
-        if (eInfo.type == "move") {
-        } else if (eInfo.type == "transform") {
-          console.log('box')
-          // 记录中心点坐标
-          slicer.centerX = _this.coorX + slicer.x + slicer.width / 2;
-          slicer.centerY = _this.coorY + slicer.y + slicer.height / 2;
-          slicer.moverX = _this.coorX + slicer.x + slicer.width;
-          slicer.moverY = _this.coorY + slicer.y + slicer.height;
-        }
+
         // 记录相对坐标范围
-        _this.minX = 0;
-        _this.minY = 0;
-        _this.maxX = _this.cvsSize.width * _this.screenRatio - slicer.width;
-        _this.maxY = _this.cvsSize.height * _this.screenRatio - slicer.height;
+        // _this.minX = 0;
+        // _this.minY = 0;
+        // _this.maxX = _this.cvsSize.width - slicer.width;
+        // _this.maxY = _this.cvsSize.height - slicer.height;
+
         // 记录指针在切片内距离
         slicer.insideX = eInfo.point.pageX - _this.coorX - slicer.x;
         slicer.insideY = eInfo.point.pageY - _this.coorY - slicer.y;
+
+        // 记录中心点坐标
+        slicer.centerX = _this.coorX + slicer.x + slicer.width / 2;
+        slicer.centerY = _this.coorY + slicer.y + slicer.height / 2;
+        // 变换点坐标
+        slicer.moverX = _this.coorX + slicer.x + slicer.width;
+        slicer.moverY = _this.coorY + slicer.y + slicer.height;
+        console.log(slicer)
       },
       touchMove(e) {
         let eInfo = touchInfo(e);
         let slicer = _this.currentSlicer[eInfo["index"]];
-        console.log("touchmove", e, touchInfo(e))
+        // console.log("touchmove", e, touchInfo(e))
         if (eInfo.type == "move") {
           if (_this.coorX && _this.coorY) {
             let realtimeX = eInfo.point.pageX - _this.coorX - slicer.insideX;
             let realtimeY = eInfo.point.pageY - _this.coorY - slicer.insideY;
 
-            console.log(realtimeX, _this.maxX, realtimeY, _this.maxY);
-
-            if (_this.minX <= realtimeX && realtimeX <= _this.maxX) {
-              slicer.x = realtimeX;
-            }
-            if (_this.minY <= realtimeY && realtimeY <= _this.maxY) {
-              slicer.y = realtimeY;
-            }
+            slicer.x = realtimeX;
+            slicer.y = realtimeY;
+            console.log('切片移动中...', realtimeX, realtimeY)
           }
         } else if (eInfo.type == "transform") {
           slicer.curX = eInfo.point.pageX;
           slicer.curY = eInfo.point.pageY;
-          // 计算宽高和旋转角度
-          slicer.string = distance(
-            slicer.curX,
-            slicer.curY,
-            slicer.centerX,
-            slicer.centerY
-          );
-          slicer.width = stringWH(slicer)["w"];
-          slicer.height = stringWH(slicer)["h"];
+
           let a = distance(
             slicer.moverX,
             slicer.moverY,
@@ -377,15 +373,28 @@ export default class Avatar extends wepy.page {
             slicer.curX,
             slicer.curY
           );
-
-          // slicer.rotate = cosDeg(a, b, c);
-          console.log(slicer);
+          let width = stringWH(slicer)["w"]
+          // 计算宽高和旋转角度
+          Object.assign(slicer, {
+            scale: scale(
+              slicer.centerX, slicer.centerY, 
+              slicer.moverX, slicer.moverY,
+              slicer.curX, slicer.curY
+            )
+          })
         }
       },
       touchEnd(e) {
+        // let eInfo = touchInfo(e);
+        // let slicer = _this.currentSlicer[eInfo["index"]];
+        console.log("touchend", e);
+      },
+      rotate(e) {
         let eInfo = touchInfo(e);
         let slicer = _this.currentSlicer[eInfo["index"]];
-        console.log("touchend", e);
+        Object.assign(slicer, {
+          scale: e.scale
+        })
       }
     });
   }
@@ -398,9 +407,20 @@ export default class Avatar extends wepy.page {
       wepy.chooseImage({
         count: 1,
         success(res) {
-          _this.ctx.drawImage(res.tempFilePaths[0], 0, 0, _this.cvsSize.width * _this.screenRatio, _this.cvsSize.height * _this.screenRatio)
-          _this.ctx.draw()
-          _this.userInfo.avatarUrl = res.tempFilePaths[0]
+          wepy.getImageInfo({
+            src: res.tempFilePaths[0],
+            success(data) {
+              console.log(data)
+              // canvas 数据宽高
+              let cvsDS = {
+                w: _this.cvsSize.width * _this.designRatio,
+                h: _this.cvsSize.height * _this.designRatio,
+              }
+              let height = (data.height / data.width) * cvsDS.w
+              _this.ctx.drawImage(res.tempFilePaths[0], 0, 0, data.width, data.height, 0, 0, cvsDS.w, height)
+              _this.ctx.draw()
+            }
+          });
         }
       });
     },
@@ -438,7 +458,7 @@ export default class Avatar extends wepy.page {
       let eInfo = touchInfo(e);
       // 移除数据
       _this.currentSlicer = _this.currentSlicer.filter((item, index) => index != eInfo["index"])
-    }
+    },
   };
 }
 </script>
