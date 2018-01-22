@@ -12,6 +12,8 @@ let touchInfo = (e) => {
 }
 // 两点距离
 let distance = (x1, y1, x2, y2) => Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2))
+// 相对某点的相对坐标
+let realCoor = (ox, oy, x, y) => [ x - ox, y - oy]
 // 对角线
 let string = (w, h) => Math.sqrt(w * w + h * h)
 // 根据对角线与勾股比计算宽度
@@ -30,16 +32,20 @@ let stringWH = (slicer) => {
     w: w
   }
 }
-
 let scale = (ox, oy, x1, y1, x2, y2) => {
   // console.log('scale', distance(ox, oy, x1, y1) / distance(ox, oy, x2, y2))
   return distance(ox, oy, x1, y1) / distance(ox, oy, x2, y2)
 }
-
 // 返回余弦角度
 let cosDeg = (a, b, c) => {
-  console.log('旋转角度...', (180 / Math.PI) * Math.acos((a * a + b * b - c * c) / (2 * a * b)))
+  console.log('[旋转角度]', (180 / Math.PI) * Math.acos((a * a + b * b - c * c) / (2 * a * b)))
   return (180 / Math.PI) * Math.acos((a * a + b * b - c * c) / (2 * a * b))
+}
+
+// 返回两个坐标点的夹角
+let angle = (x1, y1, x2, y2) => {
+  console.log('[旋转角度]', Math.abs(Math.atan(y2 / x2) - Math.atan(y1 / x1)) * (180 / Math.PI))
+  return (Math.abs(Math.atan(y2 / x2) - Math.atan(y1 / x1))) * (180 / Math.PI)
 }
 function deepClone(obj) {
   var newObj
@@ -68,5 +74,7 @@ module.exports = {
   scale,
   distance,
   cosDeg,
-  deepClone
+  deepClone,
+  realCoor,
+  angle
 }

@@ -198,7 +198,7 @@
 
 <script>
 import wepy from "wepy";
-import { touchInfo, string, stringWH, distance, cosDeg, drawAvatar, deepClone, scale } from "../utils/utilJs";
+import { touchInfo, string, stringWH, distance, cosDeg, drawAvatar, deepClone, scale, realCoor, angle } from "../utils/utilJs";
 import WxTouchEvent from "../utils/wx-touch-event";
 let TouchEvent = new WxTouchEvent();
 export default class Avatar extends wepy.page {
@@ -354,7 +354,7 @@ export default class Avatar extends wepy.page {
 
             slicer.x = realtimeX;
             slicer.y = realtimeY;
-            console.log('切片移动中...', realtimeX, realtimeY)
+            console.log('[切片移动]', realtimeX, realtimeY)
           }
         } else if (eInfo.type == "transform") {
           slicer.curX = eInfo.point.pageX;
@@ -373,15 +373,20 @@ export default class Avatar extends wepy.page {
             slicer.curX,
             slicer.curY
           );
-          let width = stringWH(slicer)["w"]
+
+          let relaCoor1 = realCoor(slicer.centerX, slicer.centerY, slicer.moverX, slicer.moverY)
+          let relaCoor2 = realCoor(slicer.centerX, slicer.centerY, slicer.curX, slicer.curY)
           // 计算宽高和旋转角度
           Object.assign(slicer, {
             scale: scale(
               slicer.centerX, slicer.centerY, 
               slicer.moverX, slicer.moverY,
               slicer.curX, slicer.curY
-            )
+            ),
+            rotate: - angle(relaCoor1[0],relaCoor1[1], relaCoor2[0],relaCoor2[1])
           })
+
+
         }
       },
       touchEnd(e) {
