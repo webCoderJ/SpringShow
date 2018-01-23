@@ -28,6 +28,9 @@
   .zIndex_5 {
     z-index: 2;
   }
+  .hidden {
+    display: none;
+  }
   .canvasBox {
     background-color: #fff;
     opacity: 0.95;
@@ -37,6 +40,7 @@
     background-size: 100% auto;
     background-repeat: no-repeat;
     background-position: center top;
+    overflow: hidden;
     .avatarCanvas {
       width: 100%;
       height: 100%;
@@ -128,7 +132,13 @@
   <!-- background-image: url('../imgs/avatar_bg.png'); -->
   <view class="avatarShowContainer" id="BOX-0" style="padding-top: {{ cvsPos.y }}px; margin-left: {{ cvsPos.x }}px;">
     <view class="canvasBox shadow" style="width: {{ cvsSize.width }}px; height: {{ cvsSize.height }}px;">
-      <canvas class="avatarCanvas zIndex_0" canvas-id="avatarCanvas" style="z-index: 0!important;"></canvas>
+      <image 
+        class="slicerImg {{ hideCanvas ? '' : 'hidden'}}"
+        src="{{ avatarInfo.url }}" 
+        style="width: {{ cvsSize.width }}px; height: {{ cvsSize.height }}px;overflow: hidden;"
+        mode="widthFix"
+      ></image>
+      <canvas class="avatarCanvas zIndex_0 {{ hideCanvas ? 'hidden' : ''}}" canvas-id="avatarCanvas" style="z-index: 0!important;"></canvas>
       <scroll-view style="width: {{ cvsSize.width }}px; height: {{ cvsSize.height }}px;" class="slicerBox zIndex_2" >
         <view class="slicerContainer zIndex_3">
            <repeat for="{{ currentSlicer }}" key="index" index="index" item="slicer">
@@ -191,7 +201,7 @@
     style="margin-left: {{ cvsPos.x }}px; margin-top: 60rpx;width: {{ cvsSize.width }}px;"
   >
     <view class="btn shadow" @tap="chooseImg">上传头像/拍照</view>
-    <view class="btn shadow" @tap="saveToPhone">保存到手机</view>
+    <view class="btn shadow" @tap="saveToPhone" @touchstart="beforeSaveToPhone">保存到手机</view>
   </view>
 </view>
 </template>
@@ -247,27 +257,35 @@ export default class Avatar extends wepy.page {
     // 设计图比
     designRatio: null,
     // 头像信息
-    avatarInfo: {}
+    avatarInfo: {
+      url: '',
+      width:  0,
+      height:  0,
+      cWidth: 0,
+      cHeight: 0,
+      _check: false
+    },
+    hideCanvas: true
   };
   onLoad() {
     const _this = this;
     let ctx = _this.ctx = wx.createCanvasContext("avatarCanvas");
-    // 下载头像到内存
+    // 下载头像
     let avatarUrl = "";
-    wepy.getUserInfo({
+    wx.getUserInfo({
       success: function(res) {
         console.log(res);
-        // var userInfo = _this.userInfo  = res.userInfo;
-        // var avatarUrl = userInfo.avatarUrl;
-
-        // wepy.downloadFile({
-        //   url: userInfo.avatarUrl,
-        //   success: function(res) {
-        //     if (res.statusCode === 200) {
-        //       avatarUrl = res.tempFilePath; //这里的地址是指向本地图片
-        //     }
-        //   }
-        // });
+        var userInfo = _this.userInfo  = res.userInfo;
+        console.log(userInfo)
+        wx.downloadFile({
+          url: userInfo.avatarUrl,
+          success: function(res) {
+            if (res.statusCode === 200) {
+              _this.avatarInfo.url = res.tempFilePath;
+              _this.$apply()
+            }
+          }
+        });
       }
     });
 
@@ -449,32 +467,38 @@ export default class Avatar extends wepy.page {
                 w: _this.cvsSize.width,
                 h: _this.cvsSize.height
               };
-              let height = data.height / data.width * cvsDS.w;
               // 记录信息，以供图片生成时使用
               _this.avatarInfo = {
                 url: res.tempFilePaths[0],
                 width:  data.width,
-                height:  data.height,
+                height:  data.width,
                 cWidth: cvsDS.w,
-                cHeight: height,
+                cHeight: cvsDS.h,
                 _check: true
               }
+              _this.$apply()
               _this.ctx.drawImage(
                 res.tempFilePaths[0],
                 0,
                 0,
                 data.width,
-                data.height,
+                data.width,
                 0,
                 0,
                 cvsDS.w,
-                height
+                cvsDS.h
               );
               _this.ctx.draw();
             }
           });
         }
       });
+    },
+    beforeSaveToPhone(){
+      const _this = this;
+      _this.$apply(() => {
+        _this.hideCanvas = false
+      })
     },
     saveToPhone(e) {
       const _this = this;
@@ -494,33 +518,35 @@ export default class Avatar extends wepy.page {
           info.cHeight
         );
       }
+
+      // 遍历切片绘到canvas
       _this.currentSlicer.forEach(slicer => {
         console.log('[saveToPhone]', slicer)
-        // ctx.save()
-        ctx.translate(slicer.x + slicer.width / 2, slicer.y + slicer.height / 2) 
-        ctx.scale(slicer.scale, slicer.scale) 
-        ctx.rotate(slicer.rotate * Math.PI / 180)
-        ctx.drawImage(slicer.path, - slicer.width / 2, - slicer.height / 2, slicer.width, slicer.height)
-        ctx.scale(1/slicer.scale, 1/slicer.scale) 
-        ctx.rotate( - slicer.rotate * Math.PI / 180)
-        ctx.translate(- slicer.x - slicer.width / 2, - slicer.y - slicer.height / 2)
+        _this.ctx.translate(slicer.x + slicer.width / 2, slicer.y + slicer.height / 2) 
+        _this.ctx.scale(slicer.scale, slicer.scale) 
+        _this.ctx.rotate(slicer.rotate * Math.PI / 180)
+        _this.ctx.drawImage(slicer.path, - slicer.width / 2, - slicer.height / 2, slicer.width, slicer.height)
+        _this.ctx.scale(1/slicer.scale, 1/slicer.scale) 
+        _this.ctx.rotate( - slicer.rotate * Math.PI / 180)
+        _this.ctx.translate(- slicer.x - slicer.width / 2, - slicer.y - slicer.height / 2)
       })
-      ctx.draw()
-
-      wx.canvasToTempFilePath({
+      _this.ctx.draw()
+      
+      wepy.canvasToTempFilePath({
         x: 0,
         y: 0,
         quality: 1,
         width: info.cWidth,
         height: info.cHeight,
-        destWidth: info.cWidth,
-        destHeight: _this.cHeight,
+        destWidth: info.cWidth * 10,
+        destHeight: info.cHeight * 10,
         canvasId: "avatarCanvas",
         success: function(res) {
+          console.log(res)
           wx.saveImageToPhotosAlbum({
             filePath: res.tempFilePath
           });
-          wx.showToast({ title: "保存成功" });
+          wx.showToast({ title: "保存成功" })
         }
       });
     },
