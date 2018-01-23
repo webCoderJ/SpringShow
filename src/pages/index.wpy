@@ -126,23 +126,23 @@
 <template>
 <view class="showPage" style="width:{{ deviceW }}px; height: {{ deviceH }}px;">
   <!-- background-image: url('../imgs/avatar_bg.png'); -->
-  <view class="avatarShowContainer" id="BOX-0" style="padding-top: {{ cvsPos.y }}rpx; margin-left: {{ cvsPos.x }}rpx;">
-    <view class="canvasBox shadow" style="width: {{ cvsSize.width }}rpx; height: {{ cvsSize.height }}rpx;">
+  <view class="avatarShowContainer" id="BOX-0" style="padding-top: {{ cvsPos.y }}px; margin-left: {{ cvsPos.x }}px;">
+    <view class="canvasBox shadow" style="width: {{ cvsSize.width }}px; height: {{ cvsSize.height }}px;">
       <canvas class="avatarCanvas zIndex_0" canvas-id="avatarCanvas" style="z-index: 0!important;"></canvas>
-      <scroll-view style="width: {{ cvsSize.width }}rpx; height: {{ cvsSize.height }}rpx;" class="slicerBox zIndex_2" >
+      <scroll-view style="width: {{ cvsSize.width }}px; height: {{ cvsSize.height }}px;" class="slicerBox zIndex_2" >
         <view class="slicerContainer zIndex_3">
            <repeat for="{{ currentSlicer }}" key="index" index="index" item="slicer">
              <view class="slicerImgBox {{ slicer.checked ? 'checked zIndex_5' : 'zIndex_4'}}" 
-                style="top: {{ slicer.y }}px; left:{{ slicer.x }}px; transform: rotate({{ slicer.rotate }}deg) scale({{ slicer.scale }}); height: {{ slicer.height }}rpx; width: {{ slicer.width }}rpx"
+                style="top: {{ slicer.y }}px; left:{{ slicer.x }}px; transform: rotate({{ slicer.rotate }}deg) scale({{ slicer.scale }}); height: {{ slicer.height }}px; width: {{ slicer.width }}px"
                 id="move-{{ index }}"
                 @touchstart.stop="touchStart"
                 @touchmove.stop="touchMove"
                 @touchend.stop="touchEnd"
               >
-               <view class="slicerImgBoxInner" style="height: {{ slicer.height }}rpx; width: {{ slicer.width }}rpx" >
+               <view class="slicerImgBoxInner" style="height: {{ slicer.height }}px; width: {{ slicer.width }}px" >
                   <image class="slicerImg" 
                     src="{{ slicer.path }}" 
-                    style="height: {{ slicer.height }}rpx; width: {{ slicer.width }}rpx" 
+                    style="height: {{ slicer.height }}px; width: {{ slicer.width }}px" 
                     mode="scaleToFill"
                   ></image>
                   <image 
@@ -173,12 +173,12 @@
   <scroll-view 
     scroll-x="true"
     class="originSlicerBox"
-    style="height: 200rpx;width: {{ cvsSize.width }}rpx; margin-left: {{ cvsPos.x }}rpx; margin-top: 50rpx;"
+    style="height: 200rpx;width: {{ cvsSize.width }}px; margin-left: {{ cvsPos.x }}px; margin-top: 50rpx;"
   >
     <view>
       <repeat for="{{ originSlicer }}" key="index" index="index" item="slicer">
         <image class="slicerImg" 
-          style="width: {{ slicer._width }}rpx;height: {{ slicer._height }}rpx;"
+          style="width: {{ slicer._width }}px;height: {{ slicer._height }}px;"
           src="{{ slicer.path }}"
           mode="scaleToFill"
           id="originSlicer-{{ index }}"
@@ -188,7 +188,7 @@
     </view>
   </scroll-view>
   <view class="btnsBox"
-    style="margin-left: {{ cvsPos.x }}rpx; margin-top: 60rpx;width: {{ cvsSize.width }}rpx;"
+    style="margin-left: {{ cvsPos.x }}px; margin-top: 60rpx;width: {{ cvsSize.width }}px;"
   >
     <view class="btn shadow" @tap="chooseImg">上传头像/拍照</view>
     <view class="btn shadow" @tap="saveToPhone">保存到手机</view>
@@ -198,7 +198,20 @@
 
 <script>
 import wepy from "wepy";
-import { touchInfo, string, stringWH, distance, cosDeg, drawAvatar, deepClone, scale, realCoor, angle } from "../utils/utilJs";
+import {
+  touchInfo,
+  string,
+  stringWH,
+  distance,
+  cosDeg,
+  drawAvatar,
+  deepClone,
+  scale,
+  realCoor,
+  angle,
+  atan2Radian,
+  radianToDeg
+} from "../utils/utilJs";
 import WxTouchEvent from "../utils/wx-touch-event";
 let TouchEvent = new WxTouchEvent();
 export default class Avatar extends wepy.page {
@@ -231,14 +244,14 @@ export default class Avatar extends wepy.page {
     coorX: null,
     coorY: null,
 
-    // cavas与屏幕的尺寸比
-    screenRatio: null,
     // 设计图比
-    designRatio: null
+    designRatio: null,
+    // 头像信息
+    avatarInfo: {}
   };
   onLoad() {
     const _this = this;
-    let ctx = _this.ctx = wx.createCanvasContext('avatarCanvas')
+    let ctx = _this.ctx = wx.createCanvasContext("avatarCanvas");
     // 下载头像到内存
     let avatarUrl = "";
     wepy.getUserInfo({
@@ -260,12 +273,18 @@ export default class Avatar extends wepy.page {
 
     wepy.getSystemInfo({
       success: function(res) {
-        _this.screenRatio = res.windowWidth / _this.cvsSize.width;
-        _this.designRatio = res.windowWidth / 750
-        _this.cvsPos.x = 77.5;
-        _this.cvsPos.y = 100;
+        _this.designRatio = res.windowWidth / 750;
+        
         _this.deviceW = res.windowWidth;
         _this.deviceH = res.windowHeight;
+        _this.cvsSize = {
+          width: 595 * _this.designRatio,
+          height: 595 * _this.designRatio,
+          ratio: 1
+        }
+
+        _this.cvsPos.x = 77.5 * _this.designRatio;
+        _this.cvsPos.y = 100 * _this.designRatio;
       }
     });
     // 初始化切片
@@ -290,17 +309,17 @@ export default class Avatar extends wepy.page {
           let ratio = 160 / data.width;
           let slicer = {
             path: path,
-            width: data.width * ratio,
-            height: data.height * ratio,
-            whRatio: data.width * ratio / (data.height * ratio),
+            width: data.width * ratio * _this.designRatio,
+            height: data.height * ratio * _this.designRatio,
+            whRatio: data.width / data.height,
             rotate: 0,
             scale: 1,
             x: 10,
             y: 10,
             checked: false,
-            _height: data.height * ratio,
-            _width: data.width * ratio,
-            _id: 'id_' + index
+            _height: data.height * ratio * _this.designRatio,
+            _width: data.width * ratio * _this.designRatio,
+            _id: "id_" + index
           };
           _this.originSlicer.push(slicer);
           // _this.currentSlicer.push(slicer);
@@ -321,15 +340,9 @@ export default class Avatar extends wepy.page {
 
         // 选中当前添加切片
         _this.currentSlicer.forEach(item => {
-          item.checked = false
-        })
-        slicer.checked = true
-
-        // 记录相对坐标范围
-        // _this.minX = 0;
-        // _this.minY = 0;
-        // _this.maxX = _this.cvsSize.width - slicer.width;
-        // _this.maxY = _this.cvsSize.height - slicer.height;
+          item.checked = false;
+        });
+        slicer.checked = true;
 
         // 记录指针在切片内距离
         slicer.insideX = eInfo.point.pageX - _this.coorX - slicer.x;
@@ -338,10 +351,22 @@ export default class Avatar extends wepy.page {
         // 记录中心点坐标
         slicer.centerX = _this.coorX + slicer.x + slicer.width / 2;
         slicer.centerY = _this.coorY + slicer.y + slicer.height / 2;
-        // 变换点坐标
+        // 变换起点坐标
         slicer.moverX = _this.coorX + slicer.x + slicer.width;
         slicer.moverY = _this.coorY + slicer.y + slicer.height;
-        console.log(slicer)
+        // slicer.moverRelaCoor = realCoor(
+        //   slicer.centerX,
+        //   slicer.centerY,
+        //   slicer.moverX,
+        //   slicer.moverY
+        // );
+        // 记录初始弧度
+        slicer.initRadian = atan2Radian(
+          slicer.centerX,
+          slicer.centerY,
+          slicer.moverX,
+          slicer.moverY
+        )
       },
       touchMove(e) {
         let eInfo = touchInfo(e);
@@ -354,39 +379,42 @@ export default class Avatar extends wepy.page {
 
             slicer.x = realtimeX;
             slicer.y = realtimeY;
-            console.log('[切片移动]', realtimeX, realtimeY)
+            console.log("[切片移动]", realtimeX, realtimeY);
           }
         } else if (eInfo.type == "transform") {
           slicer.curX = eInfo.point.pageX;
           slicer.curY = eInfo.point.pageY;
-
-          let a = distance(
-            slicer.moverX,
-            slicer.moverY,
+          // let a = distance(
+          //   slicer.moverX,
+          //   slicer.moverY,
+          //   slicer.centerX,
+          //   slicer.centerY
+          // );
+          // let b = slicer.string;
+          // let c = distance(
+          //   slicer.moverX,
+          //   slicer.moverY,
+          //   slicer.curX,
+          //   slicer.curY
+          // );
+          slicer.curRadian = atan2Radian(
             slicer.centerX,
-            slicer.centerY
-          );
-          let b = slicer.string;
-          let c = distance(
-            slicer.moverX,
-            slicer.moverY,
+            slicer.centerY,
             slicer.curX,
             slicer.curY
-          );
-
-          let relaCoor1 = realCoor(slicer.centerX, slicer.centerY, slicer.moverX, slicer.moverY)
-          let relaCoor2 = realCoor(slicer.centerX, slicer.centerY, slicer.curX, slicer.curY)
+          )
           // 计算宽高和旋转角度
           Object.assign(slicer, {
+            rotate: radianToDeg(slicer.curRadian - slicer.initRadian),
             scale: scale(
-              slicer.centerX, slicer.centerY, 
-              slicer.moverX, slicer.moverY,
-              slicer.curX, slicer.curY
-            ),
-            rotate: - angle(relaCoor1[0],relaCoor1[1], relaCoor2[0],relaCoor2[1])
-          })
-
-
+              slicer.centerX,
+              slicer.centerY,
+              slicer.moverX,
+              slicer.moverY,
+              slicer.curX,
+              slicer.curY
+            )
+          });
         }
       },
       touchEnd(e) {
@@ -399,7 +427,7 @@ export default class Avatar extends wepy.page {
         let slicer = _this.currentSlicer[eInfo["index"]];
         Object.assign(slicer, {
           scale: e.scale
-        })
+        });
       }
     });
   }
@@ -408,36 +436,85 @@ export default class Avatar extends wepy.page {
     touchMove: TouchEvent.move.bind(TouchEvent),
     touchEnd: TouchEvent.end.bind(TouchEvent),
     chooseImg(e) {
-      const _this = this
+      const _this = this;
       wepy.chooseImage({
         count: 1,
         success(res) {
           wepy.getImageInfo({
             src: res.tempFilePaths[0],
             success(data) {
-              console.log(data)
+              console.log(data);
               // canvas 数据宽高
               let cvsDS = {
-                w: _this.cvsSize.width * _this.designRatio,
-                h: _this.cvsSize.height * _this.designRatio,
+                w: _this.cvsSize.width,
+                h: _this.cvsSize.height
+              };
+              let height = data.height / data.width * cvsDS.w;
+              // 记录信息，以供图片生成时使用
+              _this.avatarInfo = {
+                url: res.tempFilePaths[0],
+                width:  data.width,
+                height:  data.height,
+                cWidth: cvsDS.w,
+                cHeight: height,
+                _check: true
               }
-              let height = (data.height / data.width) * cvsDS.w
-              _this.ctx.drawImage(res.tempFilePaths[0], 0, 0, data.width, data.height, 0, 0, cvsDS.w, height)
-              _this.ctx.draw()
+              _this.ctx.drawImage(
+                res.tempFilePaths[0],
+                0,
+                0,
+                data.width,
+                data.height,
+                0,
+                0,
+                cvsDS.w,
+                height
+              );
+              _this.ctx.draw();
             }
           });
         }
       });
     },
     saveToPhone(e) {
-      const _this = this
+      const _this = this;
+      let ctx = _this.ctx
+      // 先绘制背景
+      let info = _this.avatarInfo
+      if(info._check){
+        _this.ctx.drawImage(
+          info.url,
+          0,
+          0,
+          info.width,
+          info.height,
+          0,
+          0,
+          info.cWidth,
+          info.cHeight
+        );
+      }
+      _this.currentSlicer.forEach(slicer => {
+        console.log('[saveToPhone]', slicer)
+        // ctx.save()
+        ctx.translate(slicer.x + slicer.width / 2, slicer.y + slicer.height / 2) 
+        ctx.scale(slicer.scale, slicer.scale) 
+        ctx.rotate(slicer.rotate * Math.PI / 180)
+        ctx.drawImage(slicer.path, - slicer.width / 2, - slicer.height / 2, slicer.width, slicer.height)
+        ctx.scale(1/slicer.scale, 1/slicer.scale) 
+        ctx.rotate( - slicer.rotate * Math.PI / 180)
+        ctx.translate(- slicer.x - slicer.width / 2, - slicer.y - slicer.height / 2)
+      })
+      ctx.draw()
+
       wx.canvasToTempFilePath({
         x: 0,
         y: 0,
-        width: _this.cvsSize.width,
-        height: _this.cvsSize.height,
-        destWidth: _this.cvsSize.width,
-        destHeight: _this.cvsSize.height,
+        quality: 1,
+        width: info.cWidth,
+        height: info.cHeight,
+        destWidth: info.cWidth,
+        destHeight: _this.cHeight,
         canvasId: "avatarCanvas",
         success: function(res) {
           wx.saveImageToPhotosAlbum({
@@ -447,23 +524,25 @@ export default class Avatar extends wepy.page {
         }
       });
     },
-    chooseSlicer(e){
-      const _this = this
+    chooseSlicer(e) {
+      const _this = this;
       let eInfo = touchInfo(e);
-      let slicer = _this.originSlicer[eInfo["index"]]
+      let slicer = _this.originSlicer[eInfo["index"]];
       _this.currentSlicer.forEach(item => {
-        item.checked = false
-      })
-      let copySlicer = deepClone(slicer)
-      copySlicer.checked = true
-      _this.currentSlicer.push(copySlicer)
+        item.checked = false;
+      });
+      let copySlicer = deepClone(slicer);
+      copySlicer.checked = true;
+      _this.currentSlicer.push(copySlicer);
     },
-    xSlicer(e){
-      const _this = this
+    xSlicer(e) {
+      const _this = this;
       let eInfo = touchInfo(e);
       // 移除数据
-      _this.currentSlicer = _this.currentSlicer.filter((item, index) => index != eInfo["index"])
-    },
+      _this.currentSlicer = _this.currentSlicer.filter(
+        (item, index) => index != eInfo["index"]
+      );
+    }
   };
 }
 </script>
