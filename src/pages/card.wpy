@@ -1,0 +1,87 @@
+<style lang="less">
+.cardbg {
+  background-size: 100% 100%;
+  .cardMain {
+    width: 525rpx;
+    margin: 0 auto;
+    margin-top: 370rpx;
+    .receiver {
+      color: #b6b5b5;
+      text-decoration: underline;
+      text-decoration-color: #9f6814;
+    }
+  }
+}
+</style>
+
+<template>
+<view class="showPage cardbg" style="width:{{ deviceW }}px; height: {{ deviceH }}px;background-image: url('../imgs/card_bg.png');">
+    <view class="cardMain">
+      <view class="receiver">
+        收件人：
+      </view>
+    </view>
+</view>
+</template>
+
+<script>
+import wepy from "wepy";
+import * as utilJs from "../utils/utilJs";
+import WxTouchEvent from "../utils/wx-touch-event";
+let TouchEvent = new WxTouchEvent();
+export default class Avatar extends wepy.page {
+  config = {
+    // navigationBarTitleText: '头像秀',
+    enablePullDownRefresh: false
+  };
+  data = {
+    deviceW: 0,
+    deviceH: 0
+  };
+  onLoad() {
+    const _this = this;
+    wx.getUserInfo({
+      success: function(res) {
+        console.log(res);
+        var userInfo = (_this.userInfo = res.userInfo);
+        console.log(userInfo);
+        wx.downloadFile({
+          url: userInfo.avatarUrl,
+          success: function(res) {
+            if (res.statusCode === 200) {
+            }
+          }
+        });
+      }
+    });
+
+    wepy.getSystemInfo({
+      success: function(res) {
+        _this.designRatio = res.windowWidth / 750;
+
+        _this.deviceW = res.windowWidth;
+        _this.deviceH = res.windowHeight;
+      }
+    });
+
+    // 绑定事件
+    _this.TouchEvent = TouchEvent;
+    _this.TouchEvent.bind({
+      //初始化后绑定事件
+      touchStart(e) {},
+      touchMove(e) {},
+      touchEnd(e) {
+        // let eInfo = touchInfo(e);
+        // let slicer = _this.currentSlicer[eInfo["index"]];
+        console.log("touchend", e);
+      },
+      rotate(e) {}
+    });
+  }
+  methods = {
+    touchStart: TouchEvent.start.bind(TouchEvent),
+    touchMove: TouchEvent.move.bind(TouchEvent),
+    touchEnd: TouchEvent.end.bind(TouchEvent)
+  };
+}
+</script>

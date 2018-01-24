@@ -1,33 +1,10 @@
 <style lang="less">
-  .indexBtnBox {
-    margin: 0 auto;
-    margin-top: 635rpx;
-    text-align: center;
-    width: 410rpx;
-    .indexBtn {
-      border-radius: 100rpx;
-      padding: 18rpx 32rpx;
-      color: #e8bf82;
-      background-color: #ffffff;
-      font-weight: 800;
-      display: block;
-      font-size: 38rpx;
-      margin: 0 auto;
-      margin-bottom: 40rpx;
-    }
-  }
+  
 </style>
 
 <template>
-<view 
-  class="showPage" 
-  style="width:{{ deviceW }}px; height: {{ deviceH }}px;background-image: url('../imgs/index_bg.png');" 
->
-  <view class="indexBtnBox">
-    <navigator url="/pages/avatar" class="indexBtn">头像秀</navigator>
-    <navigator url="/pages/card" class="indexBtn">拜年贺卡</navigator>
-    <navigator url="/pages/redbag" class="indexBtn">讨红包</navigator>
-  </view>
+<view class="showPage" style="width:{{ deviceW }}px; height: {{ deviceH }}px;">
+  
 </view>
 </template>
 
@@ -38,7 +15,7 @@ import WxTouchEvent from "../utils/wx-touch-event";
 let TouchEvent = new WxTouchEvent();
 export default class Avatar extends wepy.page {
   config = {
-    navigationBarTitleText: '春节秀',
+    // navigationBarTitleText: '头像秀',
     enablePullDownRefresh: false
   };
   data = {
@@ -47,11 +24,18 @@ export default class Avatar extends wepy.page {
   };
   onLoad() {
     const _this = this;
-    console.log('this.parent', _this.$parent)
-    // 下载头像
     wx.getUserInfo({
       success: function(res) {
         console.log(res);
+        var userInfo = _this.userInfo  = res.userInfo;
+        console.log(userInfo)
+        wx.downloadFile({
+          url: userInfo.avatarUrl,
+          success: function(res) {
+            if (res.statusCode === 200) {
+            }
+          }
+        });
       }
     });
 
@@ -59,12 +43,8 @@ export default class Avatar extends wepy.page {
       success: function(res) {
         _this.designRatio = res.windowWidth / 750;
         
-        _this.$apply( () => {
-          _this.deviceW = res.windowWidth;
-          _this.deviceH = res.windowHeight;
-        })
-
-        console.log(_this.deviceW, _this.deviceH)
+        _this.deviceW = res.windowWidth;
+        _this.deviceH = res.windowHeight;
       }
     });
     
