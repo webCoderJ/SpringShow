@@ -3,9 +3,15 @@
   background-size: 100% auto;
   background-repeat: no-repeat;
   background-position: center top;
+  overflow: hidden;
 }
 .shadow {
   box-shadow: 10rpx 10rpx 20rpx rgba(100, 100, 100, 0.5);
+}
+.avatarCanvas {
+  position: absolute;
+  right: 66666px;
+  bottom: 66666px;
 }
 .avatarShowContainer {
   // height: 100%;
@@ -33,7 +39,7 @@
   }
   .canvasBox {
     background-color: #fff;
-    opacity: 0.95;
+    opacity: 0.98;
     border-radius: 10rpx;
     position: relative;
     border: 1px solid #ccc;
@@ -129,16 +135,16 @@
 
 <template>
 <view class="showPage" style="width:{{ deviceW }}px; height: {{ deviceH }}px;">
+  <canvas class="avatarCanvas zIndex_0 {{ hideCanvas ? '' : ''}}" canvas-id="avatarCanvas" style="width: {{ cvsSize.width }}px; height: {{ cvsSize.height }}px;"></canvas>
   <!-- background-image: url('../imgs/avatar_bg.png'); -->
   <view class="avatarShowContainer" id="BOX-0" style="padding-top: {{ cvsPos.y }}px; margin-left: {{ cvsPos.x }}px;">
     <view class="canvasBox shadow" style="width: {{ cvsSize.width }}px; height: {{ cvsSize.height }}px;">
       <image 
-        class="slicerImg {{ hideCanvas ? '' : 'hidden'}}"
+        class="slicerImg {{ hideCanvas ? '' : ''}}"
         src="{{ avatarInfo.url }}" 
-        style="width: {{ cvsSize.width }}px; height: {{ cvsSize.height }}px;overflow: hidden;"
+        style="width: {{ cvsSize.width }}px; height: {{ cvsSize.height }}px;"
         mode="widthFix"
       ></image>
-      <canvas class="avatarCanvas zIndex_0 {{ hideCanvas ? 'hidden' : ''}}" canvas-id="avatarCanvas" style="z-index: 0!important;"></canvas>
       <scroll-view style="width: {{ cvsSize.width }}px; height: {{ cvsSize.height }}px;" class="slicerBox zIndex_2" >
         <view class="slicerContainer zIndex_3">
            <repeat for="{{ currentSlicer }}" key="index" index="index" item="slicer">
@@ -200,8 +206,8 @@
   <view class="btnsBox"
     style="margin-left: {{ cvsPos.x }}px; margin-top: 60rpx;width: {{ cvsSize.width }}px;"
   >
-    <view class="btn shadow" @tap="chooseImg">上传头像/拍照</view>
-    <view class="btn shadow" @tap="saveToPhone" @touchstart="beforeSaveToPhone">保存到手机</view>
+    <view class="btn shadow" @tap="chooseImg">上传</view>
+    <view class="btn shadow" @tap="saveToPhone" @touchstart="beforeSaveToPhone">保存</view>
   </view>
 </view>
 </template>
@@ -455,6 +461,9 @@ export default class Avatar extends wepy.page {
     touchEnd: TouchEvent.end.bind(TouchEvent),
     chooseImg(e) {
       const _this = this;
+      _this.$apply(() => {
+        _this.hideCanvas = true
+      })
       wepy.chooseImage({
         count: 1,
         success(res) {
@@ -552,6 +561,9 @@ export default class Avatar extends wepy.page {
     },
     chooseSlicer(e) {
       const _this = this;
+      _this.$apply(() => {
+        _this.hideCanvas = true
+      })
       let eInfo = touchInfo(e);
       let slicer = _this.originSlicer[eInfo["index"]];
       _this.currentSlicer.forEach(item => {
