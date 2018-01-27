@@ -386,7 +386,7 @@ export default class Avatar extends wepy.page {
           _this.avatarInfo.startX = eInfo.point.pageX 
           _this.avatarInfo.startY = eInfo.point.pageY
           _this.avatarInfo.insideX = eInfo.point.pageX - _this.coorX - _this.avatarInfo.x
-          _this.avatarInfo.insideY = eInfo.point.pageX - _this.coorY - _this.avatarInfo.y
+          _this.avatarInfo.insideY = eInfo.point.pageY - _this.coorY - _this.avatarInfo.y
         } else {
           let slicer = _this.currentSlicer[eInfo["index"]];
           // 选中当前添加切片
@@ -402,15 +402,11 @@ export default class Avatar extends wepy.page {
           // 记录中心点坐标
           slicer.centerX = _this.coorX + slicer.x + slicer.width / 2;
           slicer.centerY = _this.coorY + slicer.y + slicer.height / 2;
+
           // 变换起点坐标
           slicer.moverX = _this.coorX + slicer.x + slicer.width;
           slicer.moverY = _this.coorY + slicer.y + slicer.height;
-          // slicer.moverRelaCoor = realCoor(
-          //   slicer.centerX,
-          //   slicer.centerY,
-          //   slicer.moverX,
-          //   slicer.moverY
-          // );
+
           // 记录初始弧度
           slicer.initRadian = atan2Radian(
             slicer.centerX,
@@ -430,7 +426,7 @@ export default class Avatar extends wepy.page {
           } 
           else if(_this.avatarInfo._type == 'vertical'){
             let curY = _this.avatarInfo.y
-            _this.avatarInfo.y = eInfo.point.pageY - _this.avatarInfo.startY + curY
+            _this.avatarInfo.y = eInfo.point.pageY - _this.coorY - _this.avatarInfo.insideY
           }
         }
         else if (eInfo.type == "move") {
@@ -445,19 +441,6 @@ export default class Avatar extends wepy.page {
         } else if (eInfo.type == "transform") {
           slicer.curX = eInfo.point.pageX;
           slicer.curY = eInfo.point.pageY;
-          // let a = distance(
-          //   slicer.moverX,
-          //   slicer.moverY,
-          //   slicer.centerX,
-          //   slicer.centerY
-          // );
-          // let b = slicer.string;
-          // let c = distance(
-          //   slicer.moverX,
-          //   slicer.moverY,
-          //   slicer.curX,
-          //   slicer.curY
-          // );
           slicer.curRadian = atan2Radian(
             slicer.centerX,
             slicer.centerY,

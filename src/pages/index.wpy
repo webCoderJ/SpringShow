@@ -11,6 +11,7 @@
       background-color: #ffffff;
       font-weight: 800;
       display: block;
+      
       font-size: 38rpx;
       margin: 0 auto;
       margin-bottom: 40rpx;
