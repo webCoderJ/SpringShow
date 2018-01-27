@@ -54,6 +54,11 @@
       top: 0;
       left: 0;
     }
+    .displayImg {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
     .canvasReplace {
       position: absolute;
       top: 0;
@@ -140,13 +145,18 @@
   <view class="avatarShowContainer" id="BOX-0" style="padding-top: {{ cvsPos.y }}px; margin-left: {{ cvsPos.x }}px;">
     <view class="canvasBox shadow" style="width: {{ cvsSize.width }}px; height: {{ cvsSize.height }}px;">
       <image 
-        class="slicerImg {{ hideCanvas ? '' : ''}}"
+        class="displayImg"
         src="{{ avatarInfo.url }}" 
-        style="width: {{ cvsSize.width }}px; height: {{ cvsSize.height }}px;"
-        mode="widthFix"
+        style="width: {{ avatarInfo.scaleW }}px; height: {{ avatarInfo.scaleH }}px;transform:translateX({{ avatarInfo.x }}px) translateY({{ avatarInfo.y }}px);"
+        mode="scaleToFill" 
       ></image>
       <scroll-view style="width: {{ cvsSize.width }}px; height: {{ cvsSize.height }}px;" class="slicerBox zIndex_2" >
-        <view class="slicerContainer zIndex_3">
+        <view class="slicerContainer zIndex_3"
+          id="moveAvatar-0"
+          @touchstart.stop="touchStart"
+          @touchmove.stop="touchMove"
+          @touchend.stop="touchEnd"
+        >
            <repeat for="{{ currentSlicer }}" key="index" index="index" item="slicer">
              <view class="slicerImgBox {{ slicer.checked ? 'checked zIndex_5' : 'zIndex_4'}}" 
                 style="top: {{ slicer.y }}px; left:{{ slicer.x }}px; transform: rotate({{ slicer.rotate }}deg) scale({{ slicer.scale }}); height: {{ slicer.height }}px; width: {{ slicer.width }}px"
@@ -232,7 +242,7 @@ import WxTouchEvent from "../utils/wx-touch-event";
 let TouchEvent = new WxTouchEvent();
 export default class Avatar extends wepy.page {
   config = {
-    navigationBarTitleText: '头像秀',
+    // navigationBarTitleText: '头像秀',
     enablePullDownRefresh: false
   };
   data = {
@@ -269,7 +279,18 @@ export default class Avatar extends wepy.page {
       height:  0,
       cWidth: 0,
       cHeight: 0,
-      _check: false
+      _check: false,
+      x: 0,
+      y: 0,
+      curX: 0,
+      curY: 0,
+      startX: 0,
+      startY: 0,
+      insideX: 0,
+      insideY: 0,
+      scaleW: 0,
+      scaleH: 0,
+      scale: 1
     },
     hideCanvas: true
   };
@@ -360,43 +381,59 @@ export default class Avatar extends wepy.page {
         _this.coorY = _this.cvsPos.y;
         console.log("touchStart", e);
         let eInfo = touchInfo(e);
-        let slicer = _this.currentSlicer[eInfo["index"]];
+        // 移动头像
+        if(eInfo.type == 'moveAvatar'){
+          _this.avatarInfo.startX = eInfo.point.pageX 
+          _this.avatarInfo.startY = eInfo.point.pageY
+          _this.avatarInfo.insideX = eInfo.point.pageX - _this.coorX - _this.avatarInfo.x
+          _this.avatarInfo.insideY = eInfo.point.pageX - _this.coorY - _this.avatarInfo.y
+        } else {
+          let slicer = _this.currentSlicer[eInfo["index"]];
+          // 选中当前添加切片
+          _this.currentSlicer.forEach(item => {
+            item.checked = false;
+          });
+          slicer.checked = true;
 
-        // 选中当前添加切片
-        _this.currentSlicer.forEach(item => {
-          item.checked = false;
-        });
-        slicer.checked = true;
+          // 记录指针在切片内距离
+          slicer.insideX = eInfo.point.pageX - _this.coorX - slicer.x;
+          slicer.insideY = eInfo.point.pageY - _this.coorY - slicer.y;
 
-        // 记录指针在切片内距离
-        slicer.insideX = eInfo.point.pageX - _this.coorX - slicer.x;
-        slicer.insideY = eInfo.point.pageY - _this.coorY - slicer.y;
-
-        // 记录中心点坐标
-        slicer.centerX = _this.coorX + slicer.x + slicer.width / 2;
-        slicer.centerY = _this.coorY + slicer.y + slicer.height / 2;
-        // 变换起点坐标
-        slicer.moverX = _this.coorX + slicer.x + slicer.width;
-        slicer.moverY = _this.coorY + slicer.y + slicer.height;
-        // slicer.moverRelaCoor = realCoor(
-        //   slicer.centerX,
-        //   slicer.centerY,
-        //   slicer.moverX,
-        //   slicer.moverY
-        // );
-        // 记录初始弧度
-        slicer.initRadian = atan2Radian(
-          slicer.centerX,
-          slicer.centerY,
-          slicer.moverX,
-          slicer.moverY
-        )
+          // 记录中心点坐标
+          slicer.centerX = _this.coorX + slicer.x + slicer.width / 2;
+          slicer.centerY = _this.coorY + slicer.y + slicer.height / 2;
+          // 变换起点坐标
+          slicer.moverX = _this.coorX + slicer.x + slicer.width;
+          slicer.moverY = _this.coorY + slicer.y + slicer.height;
+          // slicer.moverRelaCoor = realCoor(
+          //   slicer.centerX,
+          //   slicer.centerY,
+          //   slicer.moverX,
+          //   slicer.moverY
+          // );
+          // 记录初始弧度
+          slicer.initRadian = atan2Radian(
+            slicer.centerX,
+            slicer.centerY,
+            slicer.moverX,
+            slicer.moverY
+          )
+        }
       },
       touchMove(e) {
         let eInfo = touchInfo(e);
         let slicer = _this.currentSlicer[eInfo["index"]];
         // console.log("touchmove", e, touchInfo(e))
-        if (eInfo.type == "move") {
+        if(eInfo.type == "moveAvatar"){
+          if(_this.avatarInfo._type == 'horizontal'){
+             _this.avatarInfo.x = eInfo.point.pageX - _this.coorX - _this.avatarInfo.insideX
+          } 
+          else if(_this.avatarInfo._type == 'vertical'){
+            let curY = _this.avatarInfo.y
+            _this.avatarInfo.y = eInfo.point.pageY - _this.avatarInfo.startY + curY
+          }
+        }
+        else if (eInfo.type == "move") {
           if (_this.coorX && _this.coorY) {
             let realtimeX = eInfo.point.pageX - _this.coorX - slicer.insideX;
             let realtimeY = eInfo.point.pageY - _this.coorY - slicer.insideY;
@@ -476,15 +513,50 @@ export default class Avatar extends wepy.page {
                 w: _this.cvsSize.width,
                 h: _this.cvsSize.height
               };
+              // 判断是横向还是竖向图
+              let type = ''
+              let drawShort = 0
+              let scale = 1
+              let scaleH = 0
+              let scaleW = 0
+              if(data.width > data.height){
+                type = 'horizontal'
+                drawShort = data.height
+                scale = cvsDS.h / data.height
+                scaleH = cvsDS.h
+                scaleW = data.width * scale
+              }
+              else if(data.width < data.height){
+                type = 'vertical'
+                drawShort = data.width
+                scale = cvsDS.w / data.width
+                scaleW = cvsDS.w
+                scaleH = data.height * scale
+              }
+              else {
+                type = 'square'
+                drawShort = data.width
+                scale = cvsDS.w / data.width
+                scaleW = cvsDS.w
+                scaleH = cvsDS.h
+              }
+
               // 记录信息，以供图片生成时使用
               _this.avatarInfo = {
                 url: res.tempFilePaths[0],
-                width:  data.width,
-                height:  data.width,
+                width:  drawShort,
+                height:  drawShort,
                 cWidth: cvsDS.w,
                 cHeight: cvsDS.h,
-                _check: true
+                scaleW: scaleW,
+                scaleH: scaleH,
+                scale: scale,
+                _type: type,
+                _check: true,
+                x: 0,
+                y: 0
               }
+              console.log(_this.avatarInfo)
               _this.$apply()
               _this.ctx.drawImage(
                 res.tempFilePaths[0],
@@ -517,10 +589,10 @@ export default class Avatar extends wepy.page {
       if(info._check){
         _this.ctx.drawImage(
           info.url,
-          0,
-          0,
-          info.width,
-          info.height,
+          - info.x / info.scale,
+          - info.y / info.scale,
+          info.cWidth / info.scale,
+          info.cHeight / info.scale,
           0,
           0,
           info.cWidth,
