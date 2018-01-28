@@ -4,66 +4,160 @@
   .cardMain {
     width: 525rpx;
     margin: 0 auto;
-    margin-top: 370rpx;
+    margin-top: 350rpx;
+    .inputor {
+      width: 100%;
+      display: inline-block;
+      white-space: wrap;
+      color: rgba(0,0,0,0.5);
+      line-height: 64rpx;
+      letter-spacing: 5rpx;
+      padding: 10rpx 0rpx;
+      text-overflow: hidden;
+      font-size: 36rpx;
+      &.t-r {
+        text-align: right;
+      }
+      &.area {
+        height: 400rpx;
+        overflow: hidden;
+      }
+    }
     .receiver {
-      color: #b6b5b5;
-      text-decoration: underline;
-      text-decoration-color: #9f6814;
+      vertical-align: 120%;
+      font-weight: 600;
+      letter-spacing: 5rpx;
+    }
+  }
+
+  .toolBar {
+    position: fixed;
+    padding: 20rpx 20rpx;
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    justify-content: space-around;
+    bottom: -120rpx;
+    width: 84%;
+    left: 8%;
+    background: #cb151d;
+    opacity: 0.9;
+    border-radius: 10rpx;
+    font-size: 28rpx;
+    color: #f9d127;
+    box-shadow: 5px 5px 20px #cb151d;
+    transition: all 0.66s ease;
+    &.active {
+      bottom: 60rpx;
+    }
+    .toolBarItem {
+      text-align: center;
+      display: flex;
+      flex-flow: column nowrap;
+      justify-content: space-around;
+      align-items: center;
+      .smallName {
+        color: aquamarine;
+        font-size: 20rpx;
+      }
     }
   }
 }
 </style>
 
 <template>
-<view class="showPage cardbg" style="width:{{ deviceW }}px; height: {{ deviceH }}px;background-image: url('../imgs/card_bg.png');">
-    <view class="cardMain">
-      <view class="receiver">
-        收件人：
+<view class="showPage cardbg" style="width:{{ deviceW }}px; height: {{ deviceH }}px;background-image: url('{{ imgcdn }}/upload/img/backimg/card_bg.png');">
+  <view class="cardMain">
+    <view class="receiver">
+      <input 
+        value="{{ cardInfo.receiver }}" 
+        class="inputor" 
+        style="color: rgba(0,0,0,0.5);"
+        placeholder="收件人(可不填)："
+        show-confirm-bar
+      />
+      <textarea 
+        value="{{ cardInfo.content }}" 
+        class="inputor area" 
+        style="color: rgba(0,0,0,0.5);"
+        placeholder="贺卡内容："
+        bind
+        show-confirm-bar
+      ></textarea>
+      <input 
+        value="{{ cardInfo.sender }}" 
+        class="inputor t-r" 
+        style="color: rgba(0,0,0,0.5);"
+        placeholder="发件人"
+        show-confirm-bar
+      />        
+    </view>
+  </view>
+  <view class="toolBar shadow {{ activeToolBar ? 'active': '' }}">
+    <repeat for="{{ cardText }}" item="card" index="index" key="index">
+      <view class="toolBarItem" @tap="changeWords" id="{{ card.name }}">
+        <view>{{ card.name }}</view>
+      </view>
+    </repeat>
+    <view class="toolBarItem musicBar" @tap="changeMusic">
+      <view class="music smallName">{{ musicInfo.name }}</view>
+      <view class="music" wx:if="{{ musicInfo.url }}">
+        ♫ 换一个
+      </view>
+      <view class="music" wx:else>
+        ♫ 添加音乐  
       </view>
     </view>
+  </view>
+</view>
 </view>
 </template>
 
 <script>
 import wepy from "wepy";
-import * as utilJs from "../utils/utilJs";
+import * as util from "../utils/utilJs";
 import WxTouchEvent from "../utils/wx-touch-event";
 let TouchEvent = new WxTouchEvent();
 export default class Avatar extends wepy.page {
+  constructor(){
+    super()
+  }
   config = {
-    // navigationBarTitleText: '头像秀',
+    navigationBarTitleText: '新年贺卡',
     enablePullDownRefresh: false
   };
   data = {
     deviceW: 0,
-    deviceH: 0
+    deviceH: 0,
+    imgcdn:  '',
+    activeToolBar: false,
+    cardInfo: {
+      receiver: '亲爱的盆友：',
+      content: '',
+      contentId: 0,
+      contentType: '',
+      index: 0,
+      sender: '杰哥'
+    },
+    musicInfo: {
+      id: null,
+      index: null,
+      url: '',
+      name: ''
+    },
+    cardText: [],
+    musics: []
   };
-  onLoad() {
+  
+  onLoad(e) {
+    wx.showShareMenu({
+    withShareTicket: true
+  })
     const _this = this;
-    wx.getUserInfo({
-      success: function(res) {
-        console.log(res);
-        var userInfo = (_this.userInfo = res.userInfo);
-        console.log(userInfo);
-        wx.downloadFile({
-          url: userInfo.avatarUrl,
-          success: function(res) {
-            if (res.statusCode === 200) {
-            }
-          }
-        });
-      }
-    });
-
-    wepy.getSystemInfo({
-      success: function(res) {
-        _this.designRatio = res.windowWidth / 750;
-
-        _this.deviceW = res.windowWidth;
-        _this.deviceH = res.windowHeight;
-      }
-    });
-
+    const domainname = _this.$parent.globalData.domainname
+    util.initData(_this)
+    console.log(_this)
+    // _this.cardInfo.sender = _this.$parent.userInfo.nickName
     // 绑定事件
     _this.TouchEvent = TouchEvent;
     _this.TouchEvent.bind({
@@ -77,11 +171,101 @@ export default class Avatar extends wepy.page {
       },
       rotate(e) {}
     });
+
+    util.http.get(domainname + '/api/YearShow/GetHeKa').then(data => {
+      console.log('data', data)
+      let res = data.data
+      if(res.msg){
+        _this.$apply(() => { // 相当于setData()
+          // 激活操作区
+          _this.activeToolBar = true
+
+          // 初始化数据
+          _this.cardText = res.msg.personData
+          _this.musics = res.msg.music
+          // push一个空，用户切换的时候可以切到无音乐状态
+          _this.musics.push({
+            url: '',
+            name: '',
+            id: null,
+            index: null
+          })
+
+          // 根据当前分享参数初始化卡片内容和音乐
+          let id = 0, type="friend", curType = [], musicId = 0; // 模拟参数
+          _this.cardText.forEach(item => {
+            if(item.type == type){
+              curType = item.data
+            }
+          })
+          curType.forEach((item, index) => {
+            console.log(item)
+            if(item.id == id) {
+              _this.cardInfo.content = item.content
+              _this.cardInfo.index = index
+              _this.cardInfo.contentId = id
+              _this.cardInfo.contentType = type
+            }
+          })
+          _this.musics.forEach((item, index) => {
+            if(item.id == musicId){
+              _this.musicInfo = Object.assign({ index }, item)
+              // 播放
+              util.play(_this.musicInfo.url ? domainname + _this.musicInfo.url : '')
+            }
+          })
+        })
+      }
+    })
   }
   methods = {
     touchStart: TouchEvent.start.bind(TouchEvent),
     touchMove: TouchEvent.move.bind(TouchEvent),
-    touchEnd: TouchEvent.end.bind(TouchEvent)
+    touchEnd: TouchEvent.end.bind(TouchEvent),
+    changeWords(e){
+      const _this = this
+      const domainname = _this.$parent.globalData.domainname
+      let type = e.currentTarget.id
+      console.log(type)
+      if(type == _this.cardInfo.contentType){
+        if(_this.cardInfo.index = _this.cardText[type].length - 1){
+          _this.cardInfo.contentType = 0
+        } else {
+          _this.cardInfo.contentIndex += 1
+        }
+        let index = _this.cardInfo.contentIndex
+        let card = _this.cardText[type][index]
+        _this.cardInfo.content = card.content
+        _this.cardInfo.contentIndex = index
+        console.log(index)
+      } else {
+        let card = _this.cardText[type][0]
+        _this.cardInfo.contentType = type
+        _this.cardInfo.index = 0
+        _this.cardInfo.content = card.content
+        _this.cardInfo.contentId = card.id
+      }
+    },
+    changeMusic(){
+      const _this = this
+      const domainname = _this.$parent.globalData.domainname
+      _this.$apply(() => {
+        // 如果没有音乐，添加一个
+        if(!_this.musicInfo.url) {
+          _this.musicInfo = Object.assign({index: 0}, _this.musics[0])
+        } else {
+          let index = _this.musicInfo.index
+          if(index == _this.musics.length - 1){
+            index = 0
+          } else {
+            index += 1
+          }
+          _this.musicInfo = Object.assign({ index: index }, _this.musics[index])
+        }
+        // 播放
+        util.play(_this.musicInfo.url ? domainname + _this.musicInfo.url : '')
+      })
+    }
   };
 }
 </script>

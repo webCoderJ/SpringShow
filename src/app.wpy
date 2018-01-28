@@ -4,13 +4,15 @@
 
 <script>
 import wepy from 'wepy'
+import * as util from './utils/utilJs'
+import commonBus from './utils/commonBus'
 import 'wepy-async-function'
 
 export default class extends wepy.app {
   config = {
     pages: [
-      'pages/card',
       'pages/avatar',
+      'pages/card',
       'pages/index',
     ],
     window: {
@@ -22,7 +24,12 @@ export default class extends wepy.app {
   }
 
   globalData = {
-    userInfo: null
+    userInfo: null,
+    domainname: "https://minitool.penglingkeji.com",
+    imgcdn: "http://minitool.penglingkeji.com",
+    userInfo: {},
+    deviceW: 0,
+    deviceH: 0,
   }
 
   constructor () {
@@ -30,34 +37,28 @@ export default class extends wepy.app {
     this.use('requestfix')
   }
 
-  onLaunch() {
-    this.testAsync()
-  }
-
-  sleep (s) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        resolve('promise resolved')
-      }, s * 1000)
-    })
-  }
-
-  async testAsync () {
-    const data = await this.sleep(3)
-    console.log(data)
-  }
-
-  getUserInfo(cb) {
-    const that = this
-    if (this.globalData.userInfo) {
-      return this.globalData.userInfo
+  async onLaunch() {
+    const _this = this
+    try {
+      var res = wx.getSystemInfoSync();
+      this.globalData.systemInfo = res;
+      _this.globalData.deviceW = res.windowWidth
+      _this.globalData.deviceH = res.windowHeight
+    } catch (e) {
+      // Do something when catch error
     }
-    wepy.getUserInfo({
-      success (res) {
-        that.globalData.userInfo = res.userInfo
-        cb && cb(res.userInfo)
-      }
-    })
+    await wepy.login();
+    this.userInfo = await wepy.getUserInfo();
+    console.log(await wepy.getUserInfo())
+    let ctx = this
+    // commonBus.ready(ctx, true).then(() => {
+    //   let url = "/api/YearShow/GetSmallAppList";     
+    //   let data = {  };   
+    //   commonBus.getServerMsg(url, data, "GET", data => {
+    //     ctx.isLoading2 = true
+    //   })
+    //   ctx.loadData();
+    // })
   }
 }
-</script>
+</script> 

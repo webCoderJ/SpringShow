@@ -15,10 +15,10 @@ let distance = (x1, y1, x2, y2) => Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((
 let radianToDeg = (rad) => (180 / Math.PI) * rad
 // 两点角度
 let atan2Radian = (ox, oy, x, y) => {
-  return Math.atan2( y - oy, x - ox )
+  return Math.atan2(y - oy, x - ox)
 }
 // 相对某点的相对坐标
-let realCoor = (ox, oy, x, y) => [ x - ox, y - oy]
+let realCoor = (ox, oy, x, y) => [x - ox, y - oy]
 // 对角线
 let string = (w, h) => Math.sqrt(w * w + h * h)
 // 根据对角线与勾股比计算宽度
@@ -72,6 +72,14 @@ function deepClone(obj) {
     return obj
   }
 }
+
+let initData = (ctx) => {
+  ctx.deviceH = ctx.$parent.globalData.deviceH
+  ctx.deviceW = ctx.$parent.globalData.deviceW
+  ctx.imgcdn = ctx.$parent.globalData.imgcdn
+  ctx.domainname = ctx.$parent.globalData.domainname
+}
+
 module.exports = {
   touchInfo,
   string,
@@ -83,5 +91,117 @@ module.exports = {
   realCoor,
   angle,
   atan2Radian,
-  radianToDeg
+  radianToDeg,
+  initData
+}
+
+// 封装loading模块
+let loader = {
+  show: function (context) {
+    wx.showLoading({
+      title: '加载中',
+    })
+  },
+  hide: function (context) {
+    wx.hideLoading()
+    if (context) {
+      context.setData({
+        isLoading: false
+      })
+    }
+  }
+}
+
+module.exports.loader = loader
+
+function pull(url, method, params) {
+  loader.show()
+  return new Promise(function (resolve, reject) {
+    wx.request({
+      url: url,
+      data: params,
+      method: method,
+      header: {
+        //'Content-Type': 'application/json'
+      },
+      success: function (res) {
+        loader.hide()
+        console.log("success")
+        resolve(res)
+      },
+      fail: function (res) {
+        loader.hide()
+        reject(res)
+        console.warn("failed", res)
+      }
+    })
+  })
+}
+// 封装HTTP模块
+module.exports.http = {
+  get: function (url, params) {
+    return pull(url, 'GET', params)
+  },
+  post: function (url, params) {
+    return pull(url, 'POST', params)
+  }
+}
+module.exports.tools = {
+  showErr: function (msg, callback) {
+    wx.showModal({
+      content: msg,
+      showCancel: false,
+      success: function (res) {
+        if (res.confirm) {
+          callback && callback()
+        }
+      }
+    });
+  },
+  confirm: function (params, confirm, cancel) {
+    let options = Object.assign({
+      title: '',
+      content: '',
+      confirmText: "确定",
+      cancelText: "取消",
+      success: function (res) {
+        console.log(res);
+        if (res.confirm) {
+          confirm && confirm()
+        } else {
+          cancel && cancel()
+        }
+      }
+    }, params)
+    wx.showModal(options);
+  },
+}
+
+const AudioStack = []
+module.exports.play = function (url) {
+  AudioStack.forEach(item => {
+    wx.hideLoading()
+    item.destroy()
+    item.stop()
+  })
+  let innerAudioContext = wx.createInnerAudioContext()
+  AudioStack.push(innerAudioContext)
+  innerAudioContext.autoplay = true
+  innerAudioContext.src = url
+  innerAudioContext.onWaiting(() => {
+    loader.show()
+    console.log('[Audio] 加载中')
+  })
+  innerAudioContext.onPlay(() => {
+    wx.hideLoading()
+    console.log('[Audio] 开始播放')
+  })
+  innerAudioContext.onError((res) => {
+    console.log('[Audio] 播放错误', res.errMsg, res.errCode)
+    wx.hideLoading()
+    AudioStack.forEach(item => {
+      item.destroy()
+      item.stop()
+    })
+  })
 }
