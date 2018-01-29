@@ -109,11 +109,12 @@
 .originSlicerBox {
   background-color: rgba(245, 214, 166, 0.8);
   opacity: 0.8;
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  // border: 2px solid rgba(255, 255, 255, 0.4);
   border-radius: 5rpx;
   padding: 5rpx;
   box-sizing: border-box;
   white-space: nowrap;
+  position: relative;
   .slicerImg {
     display: inline-block;
     width: 40rpx;
@@ -121,6 +122,19 @@
     vertical-align: middle;
   }
 }
+
+.slicerTypes {
+  margin-top: -20rpx;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 200rpx;
+  border-radius: 5rpx;
+  .slicerType {
+  }
+}
+
 .btnsBox {
   display: flex;
   display: -webkit-flex;
@@ -213,8 +227,15 @@
       </repeat>
     </view>
   </scroll-view>
+  <view class="slicerTypes">
+    <repeat for="{{ SlicedTypesList }}" key="index" index="index" item="item">
+      <view class="slicerType" @tap="toggleType" id="toggle-{{ item.Name }}">
+        <image mode="scaleToFill" src="{{ imgcdn + item.Img }}" style="width: 50rpx; height: 50rpx;"></view>
+      </view>
+    </repeat>
+  </view>
   <view class="btnsBox"
-    style="margin-left: {{ cvsPos.x }}px; margin-top: 60rpx;width: {{ cvsSize.width }}px;"
+    style="margin-left: {{ cvsPos.x }}px; margin-top: 30rpx;width: {{ cvsSize.width }}px;"
   >
     <view class="btn shadow" @tap="chooseImg">上传头像/拍照</view>
     <view class="btn shadow" @tap="saveToPhone" @touchstart="beforeSaveToPhone">保存到手机</view>
@@ -257,6 +278,8 @@ export default class Avatar extends wepy.page {
 
     originSlicer: [],
     currentSlicer: [],
+    SlicedTypesList: [],
+    slicerPaths: {},
 
     // cvs位置
     cvsPos: {
@@ -296,33 +319,88 @@ export default class Avatar extends wepy.page {
       scaleH: 0,
       scale: 1
     },
-    hideCanvas: true
+    hideCanvas: true,
+    initAvatar(data, that) {
+      // canvas 数据宽高
+      let cvsDS = {
+        w: that.cvsSize.width,
+        h: that.cvsSize.height
+      };
+      // 判断是横向还是竖向图
+      let type = "";
+      let drawShort = 0;
+      let scale = 1;
+      let scaleH = 0;
+      let scaleW = 0;
+      if (data.width > data.height) {
+        type = "horizontal";
+        drawShort = data.height;
+        scale = cvsDS.h / data.height;
+        scaleH = cvsDS.h;
+        scaleW = data.width * scale;
+      } else if (data.width < data.height) {
+        type = "vertical";
+        drawShort = data.width;
+        scale = cvsDS.w / data.width;
+        scaleW = cvsDS.w;
+        scaleH = data.height * scale;
+      } else {
+        type = "square";
+        drawShort = data.width;
+        scale = cvsDS.w / data.width;
+        scaleW = cvsDS.w;
+        scaleH = cvsDS.h;
+      }
+
+      // 记录信息，以供图片生成时使用
+      that.avatarInfo = {
+        url: data.path,
+        width: drawShort,
+        height: drawShort,
+        cWidth: cvsDS.w,
+        cHeight: cvsDS.h,
+        scaleW: scaleW,
+        scaleH: scaleH,
+        scale: scale,
+        _type: type,
+        _check: true,
+        x: 0,
+        y: 0
+      };
+      console.log(that.avatarInfo);
+      that.$apply();
+      that.ctx.drawImage(
+        data.path,
+        0,
+        0,
+        data.width,
+        data.width,
+        0,
+        0,
+        cvsDS.w,
+        cvsDS.h
+      );
+      that.ctx.draw();
+    }
   };
-  onLoad() {
+  async onLoad() {
     const _this = this;
     initData(_this);
-    _this.deviceH = _this.$parent.globalData.systemInfo.deviceH;
-    _this.deviceW = _this.$parent.globalData.systemInfo.deviceW;
+    console.log(this);
 
     let ctx = (_this.ctx = wx.createCanvasContext("avatarCanvas"));
-    // 下载头像
-    let avatarUrl = "";
-    wx.getUserInfo({
-      success: function(res) {
-        console.log(res);
-        var userInfo = (_this.userInfo = res.userInfo);
-        console.log(userInfo);
-        wx.downloadFile({
-          url: userInfo.avatarUrl,
-          success: function(res) {
-            if (res.statusCode === 200) {
-              _this.avatarInfo.url = res.tempFilePath;
-              _this.$apply();
-            }
+    wepy.getUserInfo({
+      success(res){
+        console.log('uerInfo',res)
+        _this.userInfo = res.userInfo
+        wepy.getImageInfo({
+          src: _this.userInfo.avatarUrl,
+          success: function(res2) {
+            _this.initAvatar(res2, _this)
           }
         });
       }
-    });
+    })
 
     wepy.getSystemInfo({
       success: function(res) {
@@ -342,44 +420,47 @@ export default class Avatar extends wepy.page {
     });
 
     // 获取切片数据
-    http.get(_this.domainname + "/api/YearShow/GetSmallAppList").then(data => {
-      let res = data.data.msg;
-      console.log("res", res);
-      if (res) {
-        let slicersPath = res.SlicedTypesList;
-        slicersPath.forEach((item, index) => {
-          let path =  _this.domainname + item.Img
-          wepy.getImageInfo({
-            src: path,
-            success(data) {
-              // 160 是rpx宽度，以750设计图为基准
-              let ratio = 160 / data.width;
-              let slicer = {
-                path: path,
-                width: data.width * ratio * _this.designRatio,
-                height: data.height * ratio * _this.designRatio,
-                whRatio: data.width / data.height,
-                rotate: 0,
-                scale: 1,
-                x: 10,
-                y: 10,
-                checked: false,
-                _height: data.height * ratio * _this.designRatio,
-                _width: data.width * ratio * _this.designRatio,
-                _id: "id_" + index
-              };
-              _this.$apply(() => {
-                _this.originSlicer.push(slicer);
-                console.log('_this.originSlicer', _this.originSlicer)
-              })
-            },
-            fail(e){
-              console.log(e)
-            }
-          });
+    let SlicedTypesList = await http.get(_this.domainname + "/api/YearShow/GetSmallAppList");
+    console.log(" _this.SlicedTypesList", SlicedTypesList);
+    _this.SlicedTypesList = SlicedTypesList.data.msg.SlicedTypesList;
+    // 获取所有切片列表
+    let slicerPaths = await http.get( _this.domainname + "/api/YearShow/GetYearSlicedList", { Typesid: 0 });
+    _this.slicerPaths = slicerPaths.data.msg;
+    initSlicers(_this.SlicedTypesList[0]['Name'])
+    function initSlicers(type){
+      // 初始化第一类切片
+      _this.slicerPaths[type].forEach((item, index) => {
+        let path = _this.domainname + item.Img;
+        wepy.getImageInfo({
+          src: path,
+          success(data) {
+            // 160 是rpx宽度，以750设计图为基准
+            let ratio = 160 / data.width;
+            let slicer = {
+              path: path,
+              width: data.width * ratio * _this.designRatio,
+              height: data.height * ratio * _this.designRatio,
+              whRatio: data.width / data.height,
+              rotate: 0,
+              scale: 1,
+              x: 10,
+              y: 10,
+              checked: false,
+              _height: data.height * ratio * _this.designRatio,
+              _width: data.width * ratio * _this.designRatio,
+              _id: "id_" + index
+            };
+            _this.$apply(() => {
+              _this.originSlicer.push(slicer);
+              // console.log("_this.originSlicer", _this.originSlicer);
+            });
+          },
+          fail(e){
+            console.log(e)
+          }
         });
-      }
-    });
+      });
+    }
 
     // 绑定事件
     _this.TouchEvent = TouchEvent;
@@ -502,67 +583,9 @@ export default class Avatar extends wepy.page {
           wepy.getImageInfo({
             src: res.tempFilePaths[0],
             success(data) {
-              console.log(data);
-              // canvas 数据宽高
-              let cvsDS = {
-                w: _this.cvsSize.width,
-                h: _this.cvsSize.height
-              };
-              // 判断是横向还是竖向图
-              let type = "";
-              let drawShort = 0;
-              let scale = 1;
-              let scaleH = 0;
-              let scaleW = 0;
-              if (data.width > data.height) {
-                type = "horizontal";
-                drawShort = data.height;
-                scale = cvsDS.h / data.height;
-                scaleH = cvsDS.h;
-                scaleW = data.width * scale;
-              } else if (data.width < data.height) {
-                type = "vertical";
-                drawShort = data.width;
-                scale = cvsDS.w / data.width;
-                scaleW = cvsDS.w;
-                scaleH = data.height * scale;
-              } else {
-                type = "square";
-                drawShort = data.width;
-                scale = cvsDS.w / data.width;
-                scaleW = cvsDS.w;
-                scaleH = cvsDS.h;
-              }
-
-              // 记录信息，以供图片生成时使用
-              _this.avatarInfo = {
-                url: res.tempFilePaths[0],
-                width: drawShort,
-                height: drawShort,
-                cWidth: cvsDS.w,
-                cHeight: cvsDS.h,
-                scaleW: scaleW,
-                scaleH: scaleH,
-                scale: scale,
-                _type: type,
-                _check: true,
-                x: 0,
-                y: 0
-              };
-              console.log(_this.avatarInfo);
-              _this.$apply();
-              _this.ctx.drawImage(
-                res.tempFilePaths[0],
-                0,
-                0,
-                data.width,
-                data.width,
-                0,
-                0,
-                cvsDS.w,
-                cvsDS.h
-              );
-              _this.ctx.draw();
+              _this.initAvatar(Object.assign({}, data, {
+                path: res.tempFilePaths[0]
+              }), _this)
             }
           });
         }
@@ -657,6 +680,11 @@ export default class Avatar extends wepy.page {
       _this.currentSlicer = _this.currentSlicer.filter(
         (item, index) => index != eInfo["index"]
       );
+    },
+    toggleType(e) {
+      const _this = this;
+      let eInfo = touchInfo(e);
+      let type = eInfo.index;
     }
   };
 }

@@ -24,7 +24,6 @@ export default class extends wepy.app {
   }
 
   globalData = {
-    userInfo: null,
     domainname: "https://minitool.penglingkeji.com",
     imgcdn: "http://minitool.penglingkeji.com",
     userInfo: {},
@@ -48,8 +47,11 @@ export default class extends wepy.app {
       // Do something when catch error
     }
     await wepy.login();
-    this.userInfo = await wepy.getUserInfo();
-    console.log(await wepy.getUserInfo())
+    wepy.getUserInfo({
+      success(res){
+        _this.globalData.userInfo = res.userInfo
+      }
+    })
     let ctx = this
     // commonBus.ready(ctx, true).then(() => {
     //   let url = "/api/YearShow/GetSmallAppList";     

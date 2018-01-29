@@ -78,6 +78,7 @@ let initData = (ctx) => {
   ctx.deviceW = ctx.$parent.globalData.deviceW
   ctx.imgcdn = ctx.$parent.globalData.imgcdn
   ctx.domainname = ctx.$parent.globalData.domainname
+  ctx.userInfo = ctx.$parent.globalData.userInfo
 }
 
 module.exports = {
