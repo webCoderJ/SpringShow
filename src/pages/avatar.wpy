@@ -106,10 +106,11 @@
     }
   }
 }
+
 .originSlicerBox {
   background-color: rgba(245, 214, 166, 0.8);
   opacity: 0.8;
-  // border: 2px solid rgba(255, 255, 255, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.4);
   border-radius: 5rpx;
   padding: 5rpx;
   box-sizing: border-box;
@@ -124,14 +125,27 @@
 }
 
 .slicerTypes {
-  margin-top: -20rpx;
-  display: flex;
-  flex-flow: row nowrap;
-  justify-content: space-around;
-  align-items: center;
-  padding: 0 200rpx;
-  border-radius: 5rpx;
-  .slicerType {
+  margin-top: -30rpx;
+  height: 100rpx;
+  .slicerTypesBox {
+    height: 100%;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-around;
+    align-items: center;
+    margin: 0rpx 200rpx;
+    border-radius: 5rpx;
+    .slicerType {
+      display: inline-block;
+      transition: all 0.2s ease;
+       margin-top: 0rpx;
+      &.checked {
+        margin-top: -8rpx;
+      }
+      .typeBtn {
+        border-radius: 10rpx;
+      }
+    }
   }
 }
 
@@ -210,13 +224,14 @@
       </scroll-view>
     </view>
   </view>
+
   <scroll-view 
     scroll-x="true"
     class="originSlicerBox"
     style="height: 200rpx;width: {{ cvsSize.width }}px; margin-left: {{ cvsPos.x }}px; margin-top: 50rpx;"
   >
     <view>
-      <repeat for="{{ originSlicer }}" key="index" index="index" item="slicer">
+      <repeat for="{{ originSlicer }}" index="index" item="slicer">
         <image class="slicerImg" 
           style="width: {{ slicer._width }}px;height: {{ slicer._height }}px;"
           src="{{ slicer.path }}"
@@ -227,13 +242,17 @@
       </repeat>
     </view>
   </scroll-view>
-  <view class="slicerTypes">
-    <repeat for="{{ SlicedTypesList }}" key="index" index="index" item="item">
-      <view class="slicerType" @tap="toggleType" id="toggle-{{ item.Name }}">
-        <image mode="scaleToFill" src="{{ imgcdn + item.Img }}" style="width: 50rpx; height: 50rpx;"></view>
-      </view>
-    </repeat>
-  </view>
+
+  <scroll-view class="slicerTypes">
+    <view class="slicerTypesBox">
+      <repeat for="{{ SlicedTypesList }}" key="index" index="index" item="item">
+        <view class="slicerType {{ item.checked ? 'checked' : ''}}" @tap="toggleType" id="{{ item.Name }}-{{ index }}">
+          <image class="typeBtn" mode="scaleToFill" src="{{ imgcdn + item.Img }}" style="width: 80rpx; height: 80rpx;"></image>
+        </view>
+      </repeat>
+    </view>
+  </scroll-view>
+ 
   <view class="btnsBox"
     style="margin-left: {{ cvsPos.x }}px; margin-top: 30rpx;width: {{ cvsSize.width }}px;"
   >
@@ -279,7 +298,7 @@ export default class Avatar extends wepy.page {
     originSlicer: [],
     currentSlicer: [],
     SlicedTypesList: [],
-    slicerPaths: {},
+    allSlicers: {},
 
     // cvs位置
     cvsPos: {
@@ -421,15 +440,25 @@ export default class Avatar extends wepy.page {
 
     // 获取切片数据
     let SlicedTypesList = await http.get(_this.domainname + "/api/YearShow/GetSmallAppList");
-    console.log(" _this.SlicedTypesList", SlicedTypesList);
+    // console.log(" _this.SlicedTypesList", SlicedTypesList);
     _this.SlicedTypesList = SlicedTypesList.data.msg.SlicedTypesList;
     // 获取所有切片列表
     let slicerPaths = await http.get( _this.domainname + "/api/YearShow/GetYearSlicedList", { Typesid: 0 });
-    _this.slicerPaths = slicerPaths.data.msg;
-    initSlicers(_this.SlicedTypesList[0]['Name'])
-    function initSlicers(type){
-      // 初始化第一类切片
-      _this.slicerPaths[type].forEach((item, index) => {
+    // initSlicers(_this.SlicedTypesList[0]['Name'])
+    let allSlicers = slicerPaths.data.msg
+    // 初始化所有切片
+    let firstFlag = 'FIRST_TYPE_LENGTH'
+    let firstFlagKey = 'FIRST_TYPE_KEY'
+    let firstFlagInit = 'FIRST_TYPE_INIT'
+    Object.keys(allSlicers).forEach(key => {
+      _this.allSlicers[key] = []
+      if(!_this.allSlicers[firstFlagKey]){
+        _this.allSlicers[firstFlag] = allSlicers[key].length
+        _this.allSlicers[firstFlagKey] = key
+        _this.allSlicers[firstFlagInit] = false
+      }
+      console.log('_this.allSlicers', _this.allSlicers)
+      allSlicers[key].forEach((item, index) => {
         let path = _this.domainname + item.Img;
         wepy.getImageInfo({
           src: path,
@@ -437,7 +466,7 @@ export default class Avatar extends wepy.page {
             // 160 是rpx宽度，以750设计图为基准
             let ratio = 160 / data.width;
             let slicer = {
-              path: path,
+              path: data.path,
               width: data.width * ratio * _this.designRatio,
               height: data.height * ratio * _this.designRatio,
               whRatio: data.width / data.height,
@@ -450,18 +479,28 @@ export default class Avatar extends wepy.page {
               _width: data.width * ratio * _this.designRatio,
               _id: "id_" + index
             };
-            _this.$apply(() => {
-              _this.originSlicer.push(slicer);
-              // console.log("_this.originSlicer", _this.originSlicer);
-            });
+            _this.allSlicers[key].push(slicer)
+            // 第一类切片加载完毕，push到originSlicer选区
+            if(index + 1 == _this.allSlicers[firstFlag] && !_this.allSlicers[firstFlagInit]){
+              _this.$apply(() => {
+                _this.allSlicers[firstFlagInit] = true
+                _this.originSlicer =  _this.allSlicers[_this.allSlicers[firstFlagKey]]
+                console.log('_this.originSlicer', _this.allSlicers[_this.allSlicers[firstFlagKey]])
+                _this.SlicedTypesList.forEach(type => {
+                  console.log(type)
+                  if(type.Name == _this.allSlicers[firstFlagKey]){
+                    type.checked = true
+                  }
+                })
+              })
+            }
           },
           fail(e){
             console.log(e)
           }
         });
-      });
-    }
-
+      })
+    })
     // 绑定事件
     _this.TouchEvent = TouchEvent;
     _this.TouchEvent.bind({
@@ -567,6 +606,23 @@ export default class Avatar extends wepy.page {
         });
       }
     });
+  }
+  onShareAppMessage (res) {
+    if (res.from === 'button') {
+      // 来自页面内转发按钮
+      console.log(res.target)
+    }
+    return {
+      title: '我在春节秀制作了一张狂拽酷炫的头像，你也来试试吧！',
+      path: '/pages/avatar',
+      // imageUrl: '',
+      success: function(res) {
+        // 转发成功
+      },
+      fail: function(res) {
+        // 转发失败
+      }
+    }
   }
   methods = {
     touchStart: TouchEvent.start.bind(TouchEvent),
@@ -684,7 +740,16 @@ export default class Avatar extends wepy.page {
     toggleType(e) {
       const _this = this;
       let eInfo = touchInfo(e);
-      let type = eInfo.index;
+      console.log('eInfo', eInfo)
+      let type = eInfo.type;
+      let index = eInfo.index;
+      _this.$apply(() => {
+        _this.originSlicer = _this.allSlicers[type]
+        _this.SlicedTypesList.forEach(typeList => {
+          typeList.checked = false
+        })
+        _this.SlicedTypesList[index].checked = true
+      })
     }
   };
 }

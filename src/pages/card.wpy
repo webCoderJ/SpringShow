@@ -50,15 +50,32 @@
     &.active {
       bottom: 60rpx;
     }
-    .toolBarItem {
-      text-align: center;
+    .toolbarTitle {
+      width: 100rpx;
+      flex: 1;
+      color: aquamarine;
+      margin-left: 15rpx;
+    }
+    .toolbarContent {
+      flex: 6;
       display: flex;
-      flex-flow: column nowrap;
-      justify-content: space-around;
+      flex-flow: row nowrap;
       align-items: center;
-      .smallName {
-        color: aquamarine;
-        font-size: 20rpx;
+      justify-content: space-around;
+      .toolBarItem {
+        text-align: left;
+        display: flex;
+        flex-flow: column nowrap;
+        justify-content: space-around;
+        align-items: center;
+        .smallName {
+          color: aquamarine;
+          font-size: 20rpx;
+        }
+        .tooBarTip {
+          width: 50rpx;
+          color: aquamarine;
+        }
       }
     }
   }
@@ -94,20 +111,25 @@
     </view>
   </view>
   <view class="toolBar shadow {{ activeToolBar ? 'active': '' }}">
-    <repeat for="{{ cardText }}" item="card" index="index" key="index">
-      <view class="toolBarItem" @tap="changeWords" id="{{ card.name }}">
-        <view>{{ card.name }}</view>
-      </view>
-    </repeat>
-    <view class="toolBarItem musicBar" @tap="changeMusic">
-      <view class="music smallName">{{ musicInfo.name }}</view>
-      <view class="music" wx:if="{{ musicInfo.url }}">
-        ♫ 换一个
-      </view>
-      <view class="music" wx:else>
-        ♫ 添加音乐  
-      </view>
+    <view class="toolbarTitle">
+      送给：
     </view>
+    <view class="toolbarContent">
+      <repeat for="{{ cardText }}" item="card" index="index" key="index">
+        <view class="toolBarItem" @tap="changeWords" id="{{ card.name }}">
+          <view>{{ card.name }}</view>
+        </view>
+      </repeat>
+      <view class="toolBarItem musicBar" @tap="changeMusic">
+        <view class="music smallName">{{ musicInfo.name }}</view>
+        <view class="music" wx:if="{{ musicInfo.url }}">
+          ♫ 换一个
+        </view>
+        <view class="music" wx:else>
+          ♫ 添加音乐  
+        </view>
+      </view>
+      </view>
   </view>
 </view>
 </view>
@@ -137,7 +159,7 @@ export default class Avatar extends wepy.page {
       contentId: 0,
       contentType: '',
       index: 0,
-      sender: '杰哥'
+      sender: ''
     },
     musicInfo: {
       id: null,
@@ -148,16 +170,31 @@ export default class Avatar extends wepy.page {
     cardText: [],
     musics: []
   };
-  
+  onShareAppMessage (res) {
+    const _this = this
+    if (res.from === 'button') {
+      // 来自页面内转发按钮
+      console.log(res.target)
+    }
+    return {
+      title: _this.cardInfo.sender + '发来一张贺卡，请查收~',
+      path: '/pages/card',
+      // imageUrl: '',
+      success: function(res) {
+        // 转发成功
+      },
+      fail: function(res) {
+        // 转发失败
+      }
+    }
+  }
   onLoad(e) {
     wx.showShareMenu({
-    withShareTicket: true
-  })
+      withShareTicket: true
+    })
     const _this = this;
-    const domainname = _this.$parent.globalData.domainname
     util.initData(_this)
-    console.log(_this)
-    // _this.cardInfo.sender = _this.$parent.userInfo.nickName
+    _this.cardInfo.sender = _this.userInfo.nickName
     // 绑定事件
     _this.TouchEvent = TouchEvent;
     _this.TouchEvent.bind({
@@ -172,7 +209,7 @@ export default class Avatar extends wepy.page {
       rotate(e) {}
     });
 
-    util.http.get(domainname + '/api/YearShow/GetHeKa').then(data => {
+    util.http.get(_this.domainname + '/api/YearShow/GetHeKa').then(data => {
       console.log('data', data)
       let res = data.data
       if(res.msg){

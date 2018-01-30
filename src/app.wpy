@@ -11,9 +11,9 @@ import 'wepy-async-function'
 export default class extends wepy.app {
   config = {
     pages: [
-      'pages/avatar',
       'pages/card',
       'pages/index',
+      'pages/avatar',
     ],
     window: {
       backgroundTextStyle: 'light',
