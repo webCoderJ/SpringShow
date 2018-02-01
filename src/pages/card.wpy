@@ -9,12 +9,12 @@
       width: 100%;
       display: inline-block;
       white-space: wrap;
-      color: rgba(0,0,0,0.5);
       line-height: 64rpx;
       letter-spacing: 5rpx;
       padding: 10rpx 0rpx;
       text-overflow: hidden;
       font-size: 36rpx;
+      color: #666;
       &.t-r {
         text-align: right;
       }
@@ -38,8 +38,8 @@
     align-items: center;
     justify-content: space-around;
     bottom: -120rpx;
-    width: 84%;
-    left: 8%;
+    width: 74%;
+    left: 120rpx;
     background: #cb151d;
     opacity: 0.9;
     border-radius: 10rpx;
@@ -47,8 +47,10 @@
     color: #f9d127;
     box-shadow: 5px 5px 20px #cb151d;
     transition: all 0.66s ease;
+    line-height: 1.5;
     &.active {
       bottom: 60rpx;
+      width: 86%;
     }
     .toolbarTitle {
       width: 100rpx;
@@ -57,7 +59,7 @@
       margin-left: 15rpx;
     }
     .toolbarContent {
-      flex: 6;
+      flex: 7;
       display: flex;
       flex-flow: row nowrap;
       align-items: center;
@@ -79,6 +81,26 @@
       }
     }
   }
+  .cardBtn {
+    position: fixed;
+    bottom: 60rpx;
+    background: #cb151d;
+    opacity: 0.9;
+    padding: 20rpx 20rpx;
+    color: #f9d127;
+    border-radius: 10rpx;
+    font-size: 28rpx;
+    color: #f9d127;
+    box-shadow: 5px 5px 20px #cb151d;
+    line-height: 1.5;
+    transition: all 0.66s ease;
+    &.preview {
+      left: 0;
+    }
+    &.share {
+      right: 0;
+    }
+  }
 }
 </style>
 
@@ -87,37 +109,40 @@
   <view class="cardMain">
     <view class="receiver">
       <input 
+        wx:if="{{ cardInfo.showReceiver }}"
         value="{{ cardInfo.receiver }}" 
         class="inputor" 
-        style="color: rgba(0,0,0,0.5);"
         placeholder="收件人(可不填)："
         show-confirm-bar
+        id="receiver"
+        bindinput="inputContent"
       />
       <textarea 
         value="{{ cardInfo.content }}" 
         class="inputor area" 
-        style="color: rgba(0,0,0,0.5);"
         placeholder="贺卡内容："
-        bind
         show-confirm-bar
+        id="content"
+        bindinput="inputContent"
       ></textarea>
       <input 
         value="{{ cardInfo.sender }}" 
         class="inputor t-r" 
-        style="color: rgba(0,0,0,0.5);"
         placeholder="发件人"
         show-confirm-bar
+        id="sender"
+        bindinput="inputContent"
       />        
     </view>
   </view>
   <view class="toolBar shadow {{ activeToolBar ? 'active': '' }}">
     <view class="toolbarTitle">
-      送给：
+      给：
     </view>
     <view class="toolbarContent">
-      <repeat for="{{ cardText }}" item="card" index="index" key="index">
-        <view class="toolBarItem" @tap="changeWords" id="{{ card.name }}">
-          <view>{{ card.name }}</view>
+      <repeat for="{{ cardText.cardTypes }}" item="type" index="index" key="index">
+        <view class="toolBarItem" @tap="changeWords" id="{{ type.name }}-{{ index }}">
+          <view>{{ type.name }}</view>
         </view>
       </repeat>
       <view class="toolBarItem musicBar" @tap="changeMusic">
@@ -129,9 +154,17 @@
           ♫ 添加音乐  
         </view>
       </view>
-      </view>
+    </view>
   </view>
-</view>
+  <view wx:if="{{ editStatus == '1' }}" class="cardBtn preview" @tap="preview">
+    预览
+  </view>
+  <view wx:if="{{ editStatus == '2' }}" class="cardBtn preview" @tap="modify">
+    编辑
+  </view>
+  <button wx:if="{{ editStatus == '2' }}" class="cardBtn share" open-type="share">
+    发送
+  </button>
 </view>
 </template>
 
@@ -153,72 +186,64 @@ export default class Avatar extends wepy.page {
     deviceH: 0,
     imgcdn:  '',
     activeToolBar: false,
+    editStatus: '1', // 1编辑 2预览
     cardInfo: {
-      receiver: '亲爱的盆友：',
+      sender: '',
+      receiver: '',
       content: '',
       contentId: 0,
       contentType: '',
-      index: 0,
-      sender: ''
+      contentIndex: 0,
+      showReceiver: true,
+      shared: false
     },
     musicInfo: {
-      id: null,
-      index: null,
+      id: '',
+      index: '',
       url: '',
       name: ''
     },
-    cardText: [],
+    cardText: {
+      cardTypes: []
+    },
     musics: []
   };
   onShareAppMessage (res) {
     const _this = this
-    if (res.from === 'button') {
-      // 来自页面内转发按钮
-      console.log(res.target)
-    }
+    _this.cardInfo.shared = true
+    _this.cardInfo.sender = _this.userInfo.nickName
+    let params = JSON.stringify({
+      cardInfo: _this.cardInfo,
+      musicInfo: _this.musicInfo
+    })
     return {
       title: _this.cardInfo.sender + '发来一张贺卡，请查收~',
-      path: '/pages/card',
-      // imageUrl: '',
-      success: function(res) {
-        // 转发成功
-      },
-      fail: function(res) {
-        // 转发失败
-      }
+      path: '/pages/card?params=' + params
     }
   }
-  onLoad(e) {
-    wx.showShareMenu({
-      withShareTicket: true
-    })
+  async onLoad(e) {
     const _this = this;
     util.initData(_this)
-    _this.cardInfo.sender = _this.userInfo.nickName
-    // 绑定事件
-    _this.TouchEvent = TouchEvent;
-    _this.TouchEvent.bind({
-      //初始化后绑定事件
-      touchStart(e) {},
-      touchMove(e) {},
-      touchEnd(e) {
-        // let eInfo = touchInfo(e);
-        // let slicer = _this.currentSlicer[eInfo["index"]];
-        console.log("touchend", e);
-      },
-      rotate(e) {}
-    });
+    _this.userInfo = await util.getUserInfo()
+    let shareParams = e.params ? JSON.parse(e.params) : {}
+    // 将分享参数绑定到 vModel
+    _this.$apply(() => { 
+      Object.assign(_this.cardInfo, shareParams.cardInfo)
+      Object.assign(_this.musicInfo, shareParams.musicInfo)
+    })
+    console.log('shareParams', shareParams)
 
     util.http.get(_this.domainname + '/api/YearShow/GetHeKa').then(data => {
-      console.log('data', data)
       let res = data.data
       if(res.msg){
         _this.$apply(() => { // 相当于setData()
-          // 激活操作区
-          _this.activeToolBar = true
-
           // 初始化数据
-          _this.cardText = res.msg.personData
+          res.msg.personData.forEach(item => {
+            _this.cardText[item.name] = item.data
+            _this.cardText['cardTypes'].push({
+              name: item.name
+            })
+          })
           _this.musics = res.msg.music
           // push一个空，用户切换的时候可以切到无音乐状态
           _this.musics.push({
@@ -228,29 +253,30 @@ export default class Avatar extends wepy.page {
             index: null
           })
 
-          // 根据当前分享参数初始化卡片内容和音乐
-          let id = 0, type="friend", curType = [], musicId = 0; // 模拟参数
-          _this.cardText.forEach(item => {
-            if(item.type == type){
-              curType = item.data
-            }
-          })
-          curType.forEach((item, index) => {
-            console.log(item)
-            if(item.id == id) {
-              _this.cardInfo.content = item.content
-              _this.cardInfo.index = index
-              _this.cardInfo.contentId = id
-              _this.cardInfo.contentType = type
-            }
-          })
-          _this.musics.forEach((item, index) => {
-            if(item.id == musicId){
-              _this.musicInfo = Object.assign({ index }, item)
+          if(JSON.stringify(shareParams) != "{}"){
+             _this.editStatus = '2'
+             _this.activeToolBar = false
+            // 根据当前分享参数初始化卡片内容和音乐
+            let contentId = shareParams.cardInfo.contentId, 
+                type = shareParams.cardInfo.contentType;
+            _this.cardText[type].forEach((item, index) => {
+              if(item.id == contentId) {
+                _this.cardInfo.content = item.content
+                _this.cardInfo.contentId = contentId
+                _this.cardInfo.contentIndex = index
+                _this.cardInfo.contentType = type
+              }
+            })
+            if(shareParams.musicInfo.url){
               // 播放
-              util.play(_this.musicInfo.url ? domainname + _this.musicInfo.url : '')
+              console.log('play', _this.musicInfo.url ? _this.domainname + _this.musicInfo.url : '')
+              util.play(_this.musicInfo.url ? _this.domainname + _this.musicInfo.url : '')
             }
-          })
+          } else {
+            _this.editStatus = '1'
+            _this.activeToolBar = true
+            _this.cardInfo.sender = _this.userInfo.nickName
+          }
         })
       }
     })
@@ -259,28 +285,31 @@ export default class Avatar extends wepy.page {
     touchStart: TouchEvent.start.bind(TouchEvent),
     touchMove: TouchEvent.move.bind(TouchEvent),
     touchEnd: TouchEvent.end.bind(TouchEvent),
+    inputContent(e){
+      const _this = this
+      let type = e.currentTarget.id
+      _this.$apply(() => { _this.cardInfo[type] = e.detail.value })
+    },
     changeWords(e){
       const _this = this
       const domainname = _this.$parent.globalData.domainname
-      let type = e.currentTarget.id
-      console.log(type)
+      let type = util.touchInfo(e).type
       if(type == _this.cardInfo.contentType){
-        if(_this.cardInfo.index = _this.cardText[type].length - 1){
-          _this.cardInfo.contentType = 0
+        if(_this.cardInfo.contentIndex == (_this.cardText[type].length - 1)){
+          _this.cardInfo.contentIndex = 0
         } else {
           _this.cardInfo.contentIndex += 1
         }
         let index = _this.cardInfo.contentIndex
-        let card = _this.cardText[type][index]
+        let card = _this.cardText[type][index] 
         _this.cardInfo.content = card.content
         _this.cardInfo.contentIndex = index
-        console.log(index)
       } else {
         let card = _this.cardText[type][0]
         _this.cardInfo.contentType = type
-        _this.cardInfo.index = 0
-        _this.cardInfo.content = card.content
         _this.cardInfo.contentId = card.id
+        _this.cardInfo.contentIndex = 0
+        _this.cardInfo.content = card.content
       }
     },
     changeMusic(){
@@ -302,6 +331,19 @@ export default class Avatar extends wepy.page {
         // 播放
         util.play(_this.musicInfo.url ? domainname + _this.musicInfo.url : '')
       })
+    },
+    preview () {
+      const _this = this
+      _this.cardInfo.showReceiver = !!_this.cardInfo.receiver
+      _this.activeToolBar = false
+      _this.editStatus = '2'
+    },
+    modify () {
+      const _this = this
+      _this.cardInfo.showReceiver = true
+      _this.activeToolBar = true
+      _this.editStatus = '1'
+      _this.cardInfo.sender = _this.userInfo.nickName
     }
   };
 }
