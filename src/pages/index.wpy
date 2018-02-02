@@ -24,7 +24,7 @@
   <view class="indexBtnBox">
     <navigator url="/pages/avatar" class="indexBtn">头像秀</navigator>
     <navigator url="/pages/card" class="indexBtn">拜年贺卡</navigator>
-    <button class="indexBtn" session-from="chunjiexiu" open-type='contact'>联系客服</button>
+    <button class="indexBtn" session-from="chunjiexiu" open-type='contact'>精品推荐</button>
   </view>
 </view>
 </template>
