@@ -6,18 +6,15 @@
   justify-content: space-between;
   box-sizing: border-box;
 }
-
 view {
   box-sizing: border-box;
 }
-
 .showPage {
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center center;
   overflow: hidden;
 }
-
 .btn {
   border-radius: 20rpx;
   padding: 18rpx 32rpx;
@@ -27,11 +24,9 @@ view {
   display: inline-block;
   font-size: 32rpx;
 }
-
 .shadow {
   box-shadow: 10rpx 10rpx 20rpx rgba(100, 100, 100, 0.5);
 }
-
 .zIndex_0 {
   z-index: 0;
 }
@@ -53,11 +48,9 @@ view {
 .hidden {
   display: none;
 }
-
 .primary_color {
   color: #fffc9e;
 }
-
 .primary_bg {
   color: #db251e;
 }

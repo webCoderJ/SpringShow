@@ -1,6 +1,6 @@
 <style lang="less">
 .showPage {
-  background-size: 100% auto;
+  background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center top;
   overflow: hidden;
@@ -284,7 +284,7 @@ import WxTouchEvent from "../utils/wx-touch-event";
 let TouchEvent = new WxTouchEvent();
 export default class Avatar extends wepy.page {
   config = {
-    // navigationBarTitleText: '头像秀',
+     navigationBarTitleText: '头像秀',
     enablePullDownRefresh: false
   };
   data = {
@@ -481,7 +481,7 @@ export default class Avatar extends wepy.page {
             };
             _this.allSlicers[key].push(slicer)
             // 第一类切片加载完毕，push到originSlicer选区
-            if(index + 1 == _this.allSlicers[firstFlag] && !_this.allSlicers[firstFlagInit]){
+            if(index + 1 == 12 && !_this.allSlicers[firstFlagInit]){
               _this.$apply(() => {
                 _this.allSlicers[firstFlagInit] = true
                 _this.originSlicer =  _this.allSlicers[_this.allSlicers[firstFlagKey]]
