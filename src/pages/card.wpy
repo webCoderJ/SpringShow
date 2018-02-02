@@ -81,17 +81,17 @@
       }
     }
   }
-  @keyframes rotation{
-	0%{
-		transform:rotate(0deg);
-	}
-	100%{
-		transform:rotate(360deg);
-	}
-}
-.circle{
-  animation:rotation 3s  infinite linear;
-}
+  @keyframes rotation {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  .circle {
+    animation: rotation 3s infinite linear;
+  }
   .cardBtn {
     position: fixed;
     bottom: 60rpx;
@@ -178,7 +178,7 @@
   </button>
    <navigator wx:elif="{{ editStatus == '2'&&isshare }}" url="/pages/index" class="cardBtn share">首页</navigator>
     
-    <view wx:if="{{musicInfo.id}}" @tap="closeMusic" style="position:fixed;top:160rpx;right:70rpx;">
+    <view wx:if="{{musicInfo.url}}" @tap="closeMusic" style="position:fixed;top:160rpx;right:70rpx;">
 <image src="/imgs/music.png" class="{{play?'circle':''}}" style="width:60rpx;height:60rpx;border-radius:60rpx;"></image>
 
     </view>
@@ -225,32 +225,57 @@ export default class Avatar extends wepy.page {
       cardTypes: []
     },
     musics: [],
-    play:false
+    play:false,
+    id:0
   };
   onShareAppMessage (res) {
     const _this = this
-    _this.cardInfo.shared = true
+    /*_this.cardInfo.shared = true
     _this.cardInfo.sender = _this.userInfo.nickName
     let params = JSON.stringify({
       cardInfo: _this.cardInfo,
       musicInfo: _this.musicInfo
-    })
+    })*/
+    
     return {
       title: _this.cardInfo.sender + '发来一张贺卡，请查收~',
-      path: '/pages/card?params=' + params
+      path: '/pages/card?id=' +_this.id
     }
+   
   }
   async onLoad(e) {
     const _this = this;
     util.initData(_this)
     _this.userInfo = await util.getUserInfo()
-    let shareParams = e.params ? JSON.parse(e.params) : {}
-    // 将分享参数绑定到 vModel
+    let id=e.id?e.id:0;
+    //let shareParams = e.params ? JSON.parse(e.params) : {}
+ 
+    //console.log('shareParams', shareParams)
+if(id>0){
+util.http.get(_this.domainname + '/api/YearShow/GetYearZhuFu',{id:id}).then(data => {
+    let res = data.data;
+   // 将分享参数绑定到 vModel
     _this.$apply(() => { 
-      Object.assign(_this.cardInfo, shareParams.cardInfo)
-      Object.assign(_this.musicInfo, shareParams.musicInfo)
+      Object.assign(_this.cardInfo, {
+      sender: res.msg.SnickName,
+      receiver: res.msg.CnickName,
+      content: res.msg.Describe,
+      contentId: 0,
+      contentType: '',
+      contentIndex: 0,
+      showReceiver: !!res.msg.CnickName,
+      shared: true
     })
-    console.log('shareParams', shareParams)
+      Object.assign(_this.musicInfo, {
+      id: '',
+      index: '',
+      url: res.msg.MusicUrl,
+      name: ''
+    })
+    })
+
+})
+}
 
     util.http.get(_this.domainname + '/api/YearShow/GetHeKa').then(data => {
       let res = data.data
@@ -264,6 +289,17 @@ export default class Avatar extends wepy.page {
             })
           })
           _this.musics = res.msg.music
+          if(_this.musics.length>0&&_this.musicInfo.url){
+          let idx=  _this.musics.findIndex(item=>item.url==_this.musicInfo.url);
+          console.log(idx);
+          if(idx>-1)
+          {
+            let musicItem=_this.musics[idx]
+            musicItem.index=idx
+  _this.musicInfo=  musicItem
+          }
+        
+          }
           // push一个空，用户切换的时候可以切到无音乐状态
           _this.musics.push({
             url: '',
@@ -272,13 +308,13 @@ export default class Avatar extends wepy.page {
             index: null
           })
 
-          if(JSON.stringify(shareParams) != "{}"){
+          if(id>0){
              _this.editStatus = '2'
              _this.activeToolBar = false
              _this.isshare=true;
             // 根据当前分享参数初始化卡片内容和音乐
-            let contentId = shareParams.cardInfo.contentId, 
-                type = shareParams.cardInfo.contentType;
+           /* let contentId = _this.cardInfo.contentId, 
+                type = _this.cardInfo.contentType;
             _this.cardText[type].forEach((item, index) => {
               if(item.id == contentId) {
                 _this.cardInfo.content = item.content
@@ -286,10 +322,11 @@ export default class Avatar extends wepy.page {
                 _this.cardInfo.contentIndex = index
                 _this.cardInfo.contentType = type
               }
-            })
-            if(shareParams.musicInfo.url){
+            })*/
+            if(_this.musicInfo.url){
               // 播放
               console.log('play', _this.musicInfo.url ? _this.domainname + _this.musicInfo.url : '')
+              _this.play=true
               util.play(_this.musicInfo.url ? _this.domainname + _this.musicInfo.url : '')
             }
           } else {
@@ -368,6 +405,14 @@ export default class Avatar extends wepy.page {
       _this.cardInfo.showReceiver = !!_this.cardInfo.receiver
       _this.activeToolBar = false
       _this.editStatus = '2'
+      if(_this.cardInfo.content)
+      {
+       util.http.post(_this.domainname + '/api/YearShow/AddYearZhuFu',{SnickName:_this.cardInfo.sender,CnickName:_this.cardInfo.receiver,Describe:_this.cardInfo.content,MusicUrl:_this.musicInfo.url,BackUse:""}).then(data => {
+          _this.$apply(() => {
+        _this.id=data.data.msg
+      })
+       })
+       }
     },
     modify () {
       const _this = this
