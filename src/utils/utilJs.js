@@ -206,3 +206,13 @@ module.exports.play = function (url) {
     })
   })
 }
+
+module.exports.getUserInfo = () => {
+  return new Promise((resolve, reject) => {
+    wx.getUserInfo({
+      success(res){
+        resolve(res.userInfo)
+      }
+    })
+  })
+}

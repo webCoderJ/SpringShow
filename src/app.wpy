@@ -11,10 +11,16 @@ import 'wepy-async-function'
 export default class extends wepy.app {
   config = {
     pages: [
+<<<<<<< HEAD
    'pages/index',
       'pages/card',
      
          'pages/avatar',
+=======
+      'pages/index',
+      'pages/card',
+      'pages/avatar',
+>>>>>>> d4000e53e6701061c111cc43e1947a046b31c8f8
     ],
     window: {
       backgroundTextStyle: 'light',
@@ -48,11 +54,7 @@ export default class extends wepy.app {
       // Do something when catch error
     }
     await wepy.login();
-    wepy.getUserInfo({
-      success(res){
-        _this.globalData.userInfo = res.userInfo
-      }
-    })
+    _this.globalData.userInfo = await util.getUserInfo()
     let ctx = this
     // commonBus.ready(ctx, true).then(() => {
     //   let url = "/api/YearShow/GetSmallAppList";     
