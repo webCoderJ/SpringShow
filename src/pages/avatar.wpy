@@ -228,7 +228,7 @@
   <scroll-view 
     scroll-x="true"
     class="originSlicerBox"
-    style="height: 200rpx;width: {{ cvsSize.width }}px; margin-left: {{ cvsPos.x }}px; margin-top: 50rpx;"
+    style="height: 180rpx;width: {{ cvsSize.width }}px; margin-left: {{ cvsPos.x }}px; margin-top: 35rpx;"
   >
     <view>
       <repeat for="{{ originSlicer }}" index="index" item="slicer">
@@ -254,7 +254,7 @@
   </scroll-view>
  
   <view class="btnsBox"
-    style="margin-left: {{ cvsPos.x }}px; margin-top: 30rpx;width: {{ cvsSize.width }}px;"
+    style="margin-left: {{ cvsPos.x }}px; margin-top: 15rpx;width: {{ cvsSize.width }}px;"
   >
     <view class="btn shadow" @tap="chooseImg">上传头像/拍照</view>
     <view class="btn shadow" @tap="saveToPhone" @touchstart="beforeSaveToPhone">保存到手机</view>
@@ -481,7 +481,7 @@ export default class Avatar extends wepy.page {
             };
             _this.allSlicers[key].push(slicer)
             // 第一类切片加载完毕，push到originSlicer选区
-            if(index + 1 == 12 && !_this.allSlicers[firstFlagInit]){
+            if(index + 1 == _this.allSlicers[firstFlag] && !_this.allSlicers[firstFlagInit]){
               _this.$apply(() => {
                 _this.allSlicers[firstFlagInit] = true
                 _this.originSlicer =  _this.allSlicers[_this.allSlicers[firstFlagKey]]

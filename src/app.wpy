@@ -11,22 +11,15 @@ import 'wepy-async-function'
 export default class extends wepy.app {
   config = {
     pages: [
-<<<<<<< HEAD
-   'pages/index',
-      'pages/card',
-     
-         'pages/avatar',
-=======
       'pages/index',
       'pages/card',
       'pages/avatar',
->>>>>>> d4000e53e6701061c111cc43e1947a046b31c8f8
     ],
     window: {
       backgroundTextStyle: 'light',
-      navigationBarBackgroundColor: '#cd2119',
-      navigationBarTitleText: 'SpringShow',
-      navigationBarTextStyle: '#fffc9e'
+      navigationBarBackgroundColor: '#af1208',
+      navigationBarTitleText: '春节秀',
+      navigationBarTextStyle: '#ecc386'
     }
   }
 

@@ -182,13 +182,15 @@ const AudioStack = []
 module.exports.play = function (url) {
   AudioStack.forEach(item => {
     wx.hideLoading()
-    item.destroy()
     item.stop()
+      item.destroy()
+    
   })
   let innerAudioContext = wx.createInnerAudioContext()
   AudioStack.push(innerAudioContext)
   innerAudioContext.autoplay = true
   innerAudioContext.src = url
+  innerAudioContext.loop=true
   innerAudioContext.onWaiting(() => {
     loader.show()
     console.log('[Audio] 加载中')
@@ -200,10 +202,34 @@ module.exports.play = function (url) {
   innerAudioContext.onError((res) => {
     console.log('[Audio] 播放错误', res.errMsg, res.errCode)
     wx.hideLoading()
-    AudioStack.forEach(item => {
+    AudioStack.forEach(item => {  
+       item.stop()
       item.destroy()
-      item.stop()
     })
+  })
+}
+
+module.exports.stop = function (play,musicInfo) {
+  AudioStack.forEach(item => {
+    wx.hideLoading()
+    if(item.src!=null&&item.src.indexOf(musicInfo.url)>0)
+    {
+   
+    if(play)
+    {
+      item.play()
+    }else{
+    
+      item.pause()
+    }
+  }
+   
+  })
+}
+module.exports.destroy = function (play,musicInfo) {
+  AudioStack.forEach(item => {
+    item.stop()
+    item.destroy()
   })
 }
 

@@ -44,8 +44,12 @@ export default class Avatar extends wepy.page {
     deviceH: 0,
     imgcdn: ''
   };
+  onShow(){
+   utilJs.destroy()
+  }
   onLoad() {
     const _this = this;
+  
     utilJs.initData(_this)
     console.log(this)
     // 下载头像
@@ -87,6 +91,23 @@ export default class Avatar extends wepy.page {
         
       }
     });
+  }
+  onShareAppMessage (res) {
+    if (res.from === 'button') {
+      // 来自页面内转发按钮
+      console.log(res.target)
+    }
+    return {
+      title: '春节秀，秀出你的春节！',
+      path: '/pages/index',
+      // imageUrl: '',
+      success: function(res) {
+        // 转发成功
+      },
+      fail: function(res) {
+        // 转发失败
+      }
+    }
   }
   methods = {
     touchStart: TouchEvent.start.bind(TouchEvent),

@@ -81,6 +81,17 @@
       }
     }
   }
+  @keyframes rotation{
+	0%{
+		transform:rotate(0deg);
+	}
+	100%{
+		transform:rotate(360deg);
+	}
+}
+.circle{
+  animation:rotation 3s  infinite linear;
+}
   .cardBtn {
     position: fixed;
     bottom: 60rpx;
@@ -137,7 +148,7 @@
   </view>
   <view class="toolBar shadow {{ activeToolBar ? 'active': '' }}">
     <view class="toolbarTitle">
-      给：
+      写：
     </view>
     <view class="toolbarContent">
       <repeat for="{{ cardText.cardTypes }}" item="type" index="index" key="index">
@@ -162,9 +173,15 @@
   <view wx:if="{{ editStatus == '2' }}" class="cardBtn preview" @tap="modify">
     编辑
   </view>
-  <button wx:if="{{ editStatus == '2' }}" class="cardBtn share" open-type="share">
+  <button wx:if="{{ editStatus == '2'&&!isshare }}" class="cardBtn share" open-type="share">
     发送
   </button>
+   <navigator wx:elif="{{ editStatus == '2'&&isshare }}" url="/pages/index" class="cardBtn share">首页</navigator>
+    
+    <view wx:if="{{musicInfo.id}}" @tap="closeMusic" style="position:fixed;top:160rpx;right:70rpx;">
+<image src="/imgs/music.png" class="{{play?'circle':''}}" style="width:60rpx;height:60rpx;border-radius:60rpx;"></image>
+
+    </view>
 </view>
 </template>
 
@@ -187,6 +204,7 @@ export default class Avatar extends wepy.page {
     imgcdn:  '',
     activeToolBar: false,
     editStatus: '1', // 1编辑 2预览
+    isshare:false,
     cardInfo: {
       sender: '',
       receiver: '',
@@ -206,7 +224,8 @@ export default class Avatar extends wepy.page {
     cardText: {
       cardTypes: []
     },
-    musics: []
+    musics: [],
+    play:false
   };
   onShareAppMessage (res) {
     const _this = this
@@ -256,6 +275,7 @@ export default class Avatar extends wepy.page {
           if(JSON.stringify(shareParams) != "{}"){
              _this.editStatus = '2'
              _this.activeToolBar = false
+             _this.isshare=true;
             // 根据当前分享参数初始化卡片内容和音乐
             let contentId = shareParams.cardInfo.contentId, 
                 type = shareParams.cardInfo.contentType;
@@ -329,8 +349,19 @@ export default class Avatar extends wepy.page {
           _this.musicInfo = Object.assign({ index: index }, _this.musics[index])
         }
         // 播放
+         _this.play=true
         util.play(_this.musicInfo.url ? domainname + _this.musicInfo.url : '')
       })
+    },
+    closeMusic(){
+       const _this = this
+     
+      _this.$apply(() => {
+        _this.play=!_this.play
+        // 停止
+       util.stop(_this.play,_this.musicInfo)
+      })
+ 
     },
     preview () {
       const _this = this
@@ -343,7 +374,8 @@ export default class Avatar extends wepy.page {
       _this.cardInfo.showReceiver = true
       _this.activeToolBar = true
       _this.editStatus = '1'
-      _this.cardInfo.sender = _this.userInfo.nickName
+      _this.isshare=false
+      _this.cardInfo.sender =_this.cardInfo.sender?_this.cardInfo.sender: _this.userInfo.nickName
     }
   };
 }
