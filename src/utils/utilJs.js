@@ -242,3 +242,14 @@ module.exports.getUserInfo = () => {
     })
   })
 }
+
+module.exports.asyncGetImageInfo = (path) => {
+  return new Promise((resolve, reject) => {
+    wx.getImageInfo({
+      src: path,
+      success(res){
+        resolve(res)
+      }
+    })
+  })
+}

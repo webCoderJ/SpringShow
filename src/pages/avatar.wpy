@@ -112,7 +112,6 @@
   opacity: 0.8;
   border: 2px solid rgba(255, 255, 255, 0.4);
   border-radius: 5rpx;
-  padding: 5rpx;
   box-sizing: border-box;
   white-space: nowrap;
   position: relative;
@@ -278,7 +277,8 @@ import {
   atan2Radian,
   radianToDeg,
   initData,
-  http
+  http,
+  asyncGetImageInfo
 } from "../utils/utilJs";
 import WxTouchEvent from "../utils/wx-touch-event";
 let TouchEvent = new WxTouchEvent();
@@ -296,6 +296,7 @@ export default class Avatar extends wepy.page {
     imgcdn: "",
 
     originSlicer: [],
+    _originSlicer: [],
     currentSlicer: [],
     SlicedTypesList: [],
     allSlicers: {},
@@ -457,48 +458,53 @@ export default class Avatar extends wepy.page {
         _this.allSlicers[firstFlagKey] = key
         _this.allSlicers[firstFlagInit] = false
       }
-      console.log('_this.allSlicers', _this.allSlicers)
+      // console.log('_this.allSlicers', _this.allSlicers)
       allSlicers[key].forEach((item, index) => {
         let path = _this.domainname + item.Img;
-        wepy.getImageInfo({
-          src: path,
-          success(data) {
-            // 160 是rpx宽度，以750设计图为基准
-            let ratio = 160 / data.width;
-            let slicer = {
-              path: data.path,
-              width: data.width * ratio * _this.designRatio,
-              height: data.height * ratio * _this.designRatio,
-              whRatio: data.width / data.height,
-              rotate: 0,
-              scale: 1,
-              x: 10,
-              y: 10,
-              checked: false,
-              _height: data.height * ratio * _this.designRatio,
-              _width: data.width * ratio * _this.designRatio,
-              _id: "id_" + index
-            };
-            _this.allSlicers[key].push(slicer)
-            // 第一类切片加载完毕，push到originSlicer选区
-            if(index + 1 == _this.allSlicers[firstFlag] && !_this.allSlicers[firstFlagInit]){
-              _this.$apply(() => {
-                _this.allSlicers[firstFlagInit] = true
-                _this.originSlicer =  _this.allSlicers[_this.allSlicers[firstFlagKey]]
-                console.log('_this.originSlicer', _this.allSlicers[_this.allSlicers[firstFlagKey]])
-                _this.SlicedTypesList.forEach(type => {
-                  console.log(type)
-                  if(type.Name == _this.allSlicers[firstFlagKey]){
-                    type.checked = true
-                  }
-                })
+        getInfo(path)
+        async function getInfo(path){
+          let data = await asyncGetImageInfo(path)
+          // 160 是rpx宽度，以750设计图为基准
+          let ratio = 160 / data.width;
+          let slicer = {
+            path: data.path,
+            width: data.width * ratio * _this.designRatio,
+            height: data.height * ratio * _this.designRatio,
+            whRatio: data.width / data.height,
+            rotate: 0,
+            scale: 1,
+            x: 10,
+            y: 10,
+            checked: false,
+            _height: data.height * ratio * _this.designRatio,
+            _width: data.width * ratio * _this.designRatio,
+            _id: "id_" + index
+          };
+          _this.allSlicers[key].push(slicer)
+          // 第一类切片加载完毕，push到originSlicer选区
+          if(index + 1 == _this.allSlicers[firstFlag] && !_this.allSlicers[firstFlagInit]){
+            _this.$apply(() => {
+              _this.allSlicers[firstFlagInit] = true
+              _this.originSlicer =  _this.allSlicers[_this.allSlicers[firstFlagKey]]
+              // console.log('_this.originSlicer', _this.allSlicers[_this.allSlicers[firstFlagKey]])
+              _this.SlicedTypesList.forEach(type => {
+                // console.log(type)
+                if(type.Name == _this.allSlicers[firstFlagKey]){
+                  type.checked = true
+                }
               })
-            }
-          },
-          fail(e){
-            console.log(e)
+            })
           }
-        });
+        }
+        // wepy.getImageInfo({
+        //   src: path,
+        //   success(data) {
+            
+        //   },
+        //   fail(e){
+        //     console.log(e)
+        //   }
+        // });
       })
     })
     // 绑定事件

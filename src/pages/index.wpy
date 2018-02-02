@@ -98,7 +98,7 @@ export default class Avatar extends wepy.page {
       console.log(res.target)
     }
     return {
-      title: '春节秀，秀出你的春节！',
+      title: '春节秀，秀出你的精彩！',
       path: '/pages/index',
       // imageUrl: '',
       success: function(res) {

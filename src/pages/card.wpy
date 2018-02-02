@@ -1,6 +1,8 @@
 <style lang="less">
 .cardbg {
   background-size: 100% 100%;
+  .aquaColor {color: aquamarine;}
+  .leave {font-size: 20rpx;}
   .cardMain {
     width: 525rpx;
     margin: 0 auto;
@@ -54,9 +56,8 @@
     }
     .toolbarTitle {
       width: 100rpx;
-      flex: 1;
       color: aquamarine;
-      margin-left: 15rpx;
+      margin-left: 10rpx;
     }
     .toolbarContent {
       flex: 7;
@@ -148,21 +149,22 @@
   </view>
   <view class="toolBar shadow {{ activeToolBar ? 'active': '' }}">
     <view class="toolbarTitle">
-      写：
+      写给：
     </view>
     <view class="toolbarContent">
       <repeat for="{{ cardText.cardTypes }}" item="type" index="index" key="index">
         <view class="toolBarItem" @tap="changeWords" id="{{ type.name }}-{{ index }}">
-          <view>{{ type.name }}</view>
+          <view>{{ type.name }}<text class="aquaColor leave" wx:if="{{ cardInfo.contentType == type.name }}"> {{ cardInfo.contentIndex + 1 }}/{{ cardInfo.contentLength }} </text></view>
         </view>
       </repeat>
       <view class="toolBarItem musicBar" @tap="changeMusic">
         <view class="music smallName">{{ musicInfo.name }}</view>
         <view class="music" wx:if="{{ musicInfo.url }}">
           ♫ 换一个
+          <text class="aquaColor leave" wx:if="{{ musicInfo.url }}"> {{ musicInfo.index + 1 }}/{{ musicInfo.total }} </text>
         </view>
         <view class="music" wx:else>
-          ♫ 添加音乐  
+          ♫ 添加
         </view>
       </view>
     </view>
@@ -176,9 +178,9 @@
   <button wx:if="{{ editStatus == '2'&&!isshare }}" class="cardBtn share" open-type="share">
     发送
   </button>
-   <navigator wx:elif="{{ editStatus == '2'&&isshare }}" url="/pages/index" class="cardBtn share">首页</navigator>
+   <navigator wx:elif="{{ editStatus == '2'&&isshare }}" url="/pages/index" class="cardBtn share">更多</navigator>
     
-    <view wx:if="{{musicInfo.url}}" @tap="closeMusic" style="position:fixed;top:160rpx;right:70rpx;">
+    <view wx:if="{{musicInfo.url}}" @tap="closeMusic" style="position:fixed;top:150rpx;right:60rpx;">
 <image src="/imgs/music.png" class="{{play?'circle':''}}" style="width:60rpx;height:60rpx;border-radius:60rpx;"></image>
 
     </view>
@@ -189,6 +191,7 @@
 import wepy from "wepy";
 import * as util from "../utils/utilJs";
 import WxTouchEvent from "../utils/wx-touch-event";
+import 'wepy-async-function'
 let TouchEvent = new WxTouchEvent();
 export default class Avatar extends wepy.page {
   constructor(){
@@ -213,13 +216,15 @@ export default class Avatar extends wepy.page {
       contentType: '',
       contentIndex: 0,
       showReceiver: true,
+      hasEditSender: false,
       shared: false
     },
     musicInfo: {
       id: '',
       index: '',
       url: '',
-      name: ''
+      name: '',
+      total: 0
     },
     cardText: {
       cardTypes: []
@@ -236,7 +241,10 @@ export default class Avatar extends wepy.page {
       cardInfo: _this.cardInfo,
       musicInfo: _this.musicInfo
     })*/
-    
+    _this.cardInfo.showReceiver = !!_this.cardInfo.receiver
+    if(!_this.cardInfo.hasEditSender){
+      _this.cardInfo.sender = _this.userInfo.nickName
+    }
     return {
       title: _this.cardInfo.sender + '发来一张贺卡，请查收~',
       path: '/pages/card?id=' +_this.id
@@ -346,6 +354,9 @@ util.http.get(_this.domainname + '/api/YearShow/GetYearZhuFu',{id:id}).then(data
       const _this = this
       let type = e.currentTarget.id
       _this.$apply(() => { _this.cardInfo[type] = e.detail.value })
+      if(type == 'content'){
+        _this.cardInfo.hasEditSender = true
+      }
     },
     changeWords(e){
       const _this = this
@@ -361,12 +372,14 @@ util.http.get(_this.domainname + '/api/YearShow/GetYearZhuFu',{id:id}).then(data
         let card = _this.cardText[type][index] 
         _this.cardInfo.content = card.content
         _this.cardInfo.contentIndex = index
+        _this.cardInfo.contentLength = _this.cardText[type].length
       } else {
         let card = _this.cardText[type][0]
         _this.cardInfo.contentType = type
         _this.cardInfo.contentId = card.id
         _this.cardInfo.contentIndex = 0
         _this.cardInfo.content = card.content
+        _this.cardInfo.contentLength = _this.cardText[type].length
       }
     },
     changeMusic(){
@@ -385,6 +398,7 @@ util.http.get(_this.domainname + '/api/YearShow/GetYearZhuFu',{id:id}).then(data
           }
           _this.musicInfo = Object.assign({ index: index }, _this.musics[index])
         }
+        _this.musicInfo.total = _this.musics.length
         // 播放
          _this.play=true
         util.play(_this.musicInfo.url ? domainname + _this.musicInfo.url : '')
@@ -419,8 +433,10 @@ util.http.get(_this.domainname + '/api/YearShow/GetYearZhuFu',{id:id}).then(data
       _this.cardInfo.showReceiver = true
       _this.activeToolBar = true
       _this.editStatus = '1'
-      _this.isshare=false
-      _this.cardInfo.sender =_this.cardInfo.sender?_this.cardInfo.sender: _this.userInfo.nickName
+      _this.isshare = false
+      if(!_this.cardInfo.hasEditSender){
+        _this.cardInfo.sender = _this.cardInfo.sender ? _this.cardInfo.sender : _this.userInfo.nickName
+      }
     }
   };
 }
