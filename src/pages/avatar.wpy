@@ -118,7 +118,7 @@
   .slicerImg {
     display: inline-block;
     width: 40rpx;
-    padding: 10rpx;
+    padding: 5rpx;
     vertical-align: middle;
   }
 }
@@ -494,6 +494,7 @@ export default class Avatar extends wepy.page {
                 }
               })
             })
+            _this.$apply()
           }
         }
         // wepy.getImageInfo({
