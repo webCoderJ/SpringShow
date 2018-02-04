@@ -118,6 +118,7 @@
 
 <template>
 <view class="showPage cardbg" style="width:{{ deviceW }}px; height: {{ deviceH }}px;background-image: url('{{ imgcdn }}/upload/img/backimg/card_bg.png');">
+<view class="showPage cardbg" style="width:{{ deviceW }}px; height: {{ deviceH }}px;background-image: url('{{ imgcdn }}/upload/img/backimg/card_bg.gif');">
   <view class="cardMain">
     <view class="receiver">
       <input 
@@ -184,6 +185,7 @@
 <image src="/imgs/music.png" class="{{play?'circle':''}}" style="width:60rpx;height:60rpx;border-radius:60rpx;"></image>
 
     </view>
+    </view>
 </view>
 </template>
 
@@ -242,26 +244,46 @@ export default class Avatar extends wepy.page {
       musicInfo: _this.musicInfo
     })*/
     _this.cardInfo.showReceiver = !!_this.cardInfo.receiver
-    if(!_this.cardInfo.hasEditSender){
-      _this.cardInfo.sender = _this.userInfo.nickName
-    }
+    // if(!_this.cardInfo.hasEditSender){
+    //   _this.cardInfo.sender = _this.userInfo.nickName
+    // }
+   
+    let guid=util.uuid();
+    let s=1;
     return {
       title: _this.cardInfo.sender + '发来一张贺卡，请查收~',
-      path: '/pages/card?id=' +_this.id
+      path: '/pages/card?guid=' +guid,
+      success: function (res) {
+        if(_this.cardInfo.content)
+      {
+       util.http.post(_this.domainname + '/api/YearShow/AddYearZhuFu',{SnickName:_this.cardInfo.sender,CnickName:_this.cardInfo.receiver,Describe:_this.cardInfo.content,MusicUrl:_this.musicInfo.url,BackUse:guid}).then(data => {
+          _this.$apply(() => {
+        _this.id=data.data.msg
+      })
+       })
+       }
+      }
     }
    
   }
+  
   async onLoad(e) {
     const _this = this;
     util.initData(_this)
     _this.userInfo = await util.getUserInfo()
-    let id=e.id?e.id:0;
+    let guid=e.guid?e.guid:"";
+    let ss=11;
+   
     //let shareParams = e.params ? JSON.parse(e.params) : {}
  
     //console.log('shareParams', shareParams)
-if(id>0){
-util.http.get(_this.domainname + '/api/YearShow/GetYearZhuFu',{id:id}).then(data => {
+if(guid){
+util.http.get(_this.domainname + '/api/YearShow/GetYearZhuFu',{guid:guid}).then(data => {  
     let res = data.data;
+     console.log('res.msg='+res.msg); 
+    if(res.msg)
+    {
+      console.log('res.msg.Describe='+res.msg.Describe);
    // 将分享参数绑定到 vModel
     _this.$apply(() => { 
       Object.assign(_this.cardInfo, {
@@ -281,7 +303,7 @@ util.http.get(_this.domainname + '/api/YearShow/GetYearZhuFu',{id:id}).then(data
       name: ''
     })
     })
-
+}
 })
 }
 
@@ -316,7 +338,7 @@ util.http.get(_this.domainname + '/api/YearShow/GetYearZhuFu',{id:id}).then(data
             index: null
           })
 
-          if(id>0){
+          if(guid){
              _this.editStatus = '2'
              _this.activeToolBar = false
              _this.isshare=true;
@@ -419,18 +441,15 @@ util.http.get(_this.domainname + '/api/YearShow/GetYearZhuFu',{id:id}).then(data
       _this.cardInfo.showReceiver = !!_this.cardInfo.receiver
       _this.activeToolBar = false
       _this.editStatus = '2'
-      if(_this.cardInfo.content)
-      {
-       util.http.post(_this.domainname + '/api/YearShow/AddYearZhuFu',{SnickName:_this.cardInfo.sender,CnickName:_this.cardInfo.receiver,Describe:_this.cardInfo.content,MusicUrl:_this.musicInfo.url,BackUse:""}).then(data => {
-          _this.$apply(() => {
-        _this.id=data.data.msg
-      })
-       })
-       }
+     
     },
     modify () {
       const _this = this
       _this.cardInfo.showReceiver = true
+    
+         _this.$apply(() => {
+         _this.cardInfo.sender = _this.userInfo.nickName
+      })
       _this.activeToolBar = true
       _this.editStatus = '1'
       _this.isshare = false

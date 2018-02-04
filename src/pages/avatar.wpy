@@ -167,6 +167,7 @@
 
 <template>
 <view class="showPage" style="width:{{ deviceW }}px; height: {{ deviceH }}px; background-image: url('{{ imgcdn }}/upload/img/backimg/avatar_bg.png');">
+<view class="showPage" style="width:{{ deviceW }}px; height: {{ deviceH }}px; background-image: url('{{ imgcdn }}/upload/img/backimg/avatar_bg.gif');">
   <canvas class="avatarCanvas zIndex_0 {{ hideCanvas ? '' : ''}}" canvas-id="avatarCanvas" style="width: {{ cvsSize.width }}px; height: {{ cvsSize.height }}px;"></canvas>
   <!-- background-image: url('../imgs/avatar_bg.png'); -->
   <view class="avatarShowContainer" id="BOX-0" style="padding-top: {{ cvsPos.y }}px; margin-left: {{ cvsPos.x }}px;">
@@ -257,6 +258,7 @@
   >
     <view class="btn shadow" @tap="chooseImg">上传头像/拍照</view>
     <view class="btn shadow" @tap="saveToPhone" @touchstart="beforeSaveToPhone">保存到手机</view>
+  </view>
   </view>
 </view>
 </template>
@@ -482,7 +484,7 @@ export default class Avatar extends wepy.page {
           };
           _this.allSlicers[key].push(slicer)
           // 第一类切片加载完毕，push到originSlicer选区
-          if(index + 1 == _this.allSlicers[firstFlag] && !_this.allSlicers[firstFlagInit]){
+          //if(index + 1 == _this.allSlicers[firstFlag] && !_this.allSlicers[firstFlagInit]){
             _this.$apply(() => {
               _this.allSlicers[firstFlagInit] = true
               _this.originSlicer =  _this.allSlicers[_this.allSlicers[firstFlagKey]]
@@ -494,7 +496,7 @@ export default class Avatar extends wepy.page {
                 }
               })
             })
-          }
+         // }
         }
         // wepy.getImageInfo({
         //   src: path,

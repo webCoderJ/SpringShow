@@ -21,10 +21,12 @@
 
 <template>
 <view class="showPage" style="width:{{ deviceW }}px; height: {{ deviceH }}px; background-image: url('{{ imgcdn }}/upload/img/backimg/index_bg.png');">
+<view class="showPage" style="width:{{ deviceW }}px; height: {{ deviceH }}px; background-image: url('{{ imgcdn }}/upload/img/backimg/index_bg.gif');">
   <view class="indexBtnBox">
     <navigator url="/pages/avatar" class="indexBtn">头像秀</navigator>
     <navigator url="/pages/card" class="indexBtn">拜年贺卡</navigator>
-    <button class="indexBtn" session-from="chunjiexiu" open-type='contact'>精品推荐</button>
+    <button class="indexBtn" session-from="chunjiexiu" open-type='contact'>关注我们</button>
+  </view>
   </view>
 </view>
 </template>
