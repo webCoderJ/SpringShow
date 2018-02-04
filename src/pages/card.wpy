@@ -1,8 +1,12 @@
 <style lang="less">
 .cardbg {
   background-size: 100% 100%;
-  .aquaColor {color: aquamarine;}
-  .leave {font-size: 20rpx;}
+  .aquaColor {
+    color: aquamarine;
+  }
+  .leave {
+    font-size: 20rpx;
+  }
   .cardMain {
     width: 525rpx;
     margin: 0 auto;
@@ -118,6 +122,7 @@
 
 <template>
 <view class="showPage cardbg" style="width:{{ deviceW }}px; height: {{ deviceH }}px;background-image: url('{{ imgcdn }}/upload/img/backimg/card_bg.png');">
+<view class="showPage cardbg" style="width:{{ deviceW }}px; height: {{ deviceH }}px;background-image: url('{{ imgcdn }}/upload/img/backimg/card_bg.gif');">
   <view class="cardMain">
     <view class="receiver">
       <input 
@@ -132,7 +137,7 @@
       <textarea 
         value="{{ cardInfo.content }}" 
         class="inputor area" 
-        placeholder="贺卡内容："
+        placeholder="贺卡内容(可快捷生成)："
         show-confirm-bar
         id="content"
         bindinput="inputContent"
@@ -184,6 +189,7 @@
 <image src="/imgs/music.png" class="{{play?'circle':''}}" style="width:60rpx;height:60rpx;border-radius:60rpx;"></image>
 
     </view>
+    </view>
 </view>
 </template>
 
@@ -191,137 +197,167 @@
 import wepy from "wepy";
 import * as util from "../utils/utilJs";
 import WxTouchEvent from "../utils/wx-touch-event";
-import 'wepy-async-function'
+import "wepy-async-function";
 let TouchEvent = new WxTouchEvent();
 export default class Avatar extends wepy.page {
-  constructor(){
-    super()
+  constructor() {
+    super();
   }
   config = {
-    navigationBarTitleText: '新年贺卡',
+    navigationBarTitleText: "新年贺卡",
     enablePullDownRefresh: false
   };
   data = {
     deviceW: 0,
     deviceH: 0,
-    imgcdn:  '',
+    imgcdn: "",
     activeToolBar: false,
-    editStatus: '1', // 1编辑 2预览
-    isshare:false,
+    editStatus: "1", // 1编辑 2预览
+    isshare: false,
     cardInfo: {
-      sender: '',
-      receiver: '',
-      content: '',
+      sender: "",
+      receiver: "",
+      content: "",
       contentId: 0,
-      contentType: '',
+      contentType: "",
       contentIndex: 0,
       showReceiver: true,
       hasEditSender: false,
       shared: false
     },
     musicInfo: {
-      id: '',
-      index: '',
-      url: '',
-      name: '',
+      id: "",
+      index: "",
+      url: "",
+      name: "",
       total: 0
     },
     cardText: {
       cardTypes: []
     },
     musics: [],
-    play:false,
-    id:0
+    play: false,
+    id: 0
   };
-  onShareAppMessage (res) {
-    const _this = this
+  onShareAppMessage(res) {
+    const _this = this;
     /*_this.cardInfo.shared = true
     _this.cardInfo.sender = _this.userInfo.nickName
     let params = JSON.stringify({
       cardInfo: _this.cardInfo,
       musicInfo: _this.musicInfo
     })*/
-    _this.cardInfo.showReceiver = !!_this.cardInfo.receiver
-    if(!_this.cardInfo.hasEditSender){
-      _this.cardInfo.sender = _this.userInfo.nickName
-    }
-    return {
-      title: _this.cardInfo.sender + '发来一张贺卡，请查收~',
-      path: '/pages/card?id=' +_this.id
-    }
-   
+    _this.cardInfo.showReceiver = !!_this.cardInfo.receiver;
+    if (!_this.cardInfo.hasEditSender) {
+      _this.cardInfo.sender = _this.cardInfo.sender
+      ? _this.cardInfo.sender
+      : _this.userInfo.nickName;
   }
+
+    let guid = util.uuid();
+    let s = 1;
+    return {
+      title: _this.cardInfo.sender + "发来一张贺卡，请查收~",
+      path: "/pages/card?guid=" + guid,
+      success: function(res) {
+        if (_this.cardInfo.content) {
+          util.http
+            .post(_this.domainname + "/api/YearShow/AddYearZhuFu", {
+              SnickName: _this.cardInfo.sender,
+              CnickName: _this.cardInfo.receiver,
+              Describe: _this.cardInfo.content,
+              MusicUrl: _this.musicInfo.url,
+              BackUse: guid
+            })
+            .then(data => {
+              _this.$apply(() => {
+                _this.id = data.data.msg;
+              });
+            });
+        }
+      }
+    };
+  }
+
   async onLoad(e) {
     const _this = this;
-    util.initData(_this)
-    _this.userInfo = await util.getUserInfo()
-    let id=e.id?e.id:0;
+    util.initData(_this);
+    _this.userInfo = await util.getUserInfo();
+    let guid = e.guid ? e.guid : "";
+    let ss = 11;
+
     //let shareParams = e.params ? JSON.parse(e.params) : {}
- 
+
     //console.log('shareParams', shareParams)
-if(id>0){
-util.http.get(_this.domainname + '/api/YearShow/GetYearZhuFu',{id:id}).then(data => {
-    let res = data.data;
-   // 将分享参数绑定到 vModel
-    _this.$apply(() => { 
-      Object.assign(_this.cardInfo, {
-      sender: res.msg.SnickName,
-      receiver: res.msg.CnickName,
-      content: res.msg.Describe,
-      contentId: 0,
-      contentType: '',
-      contentIndex: 0,
-      showReceiver: !!res.msg.CnickName,
-      shared: true
-    })
-      Object.assign(_this.musicInfo, {
-      id: '',
-      index: '',
-      url: res.msg.MusicUrl,
-      name: ''
-    })
-    })
+    if (guid) {
+      util.http
+        .get(_this.domainname + "/api/YearShow/GetYearZhuFu", { guid: guid })
+        .then(data => {
+          let res = data.data;
+          console.log("res.msg=" + res.msg);
+          if (res.msg) {
+            console.log("res.msg.Describe=" + res.msg.Describe);
+            // 将分享参数绑定到 vModel
+            _this.$apply(() => {
+              Object.assign(_this.cardInfo, {
+                sender: res.msg.SnickName,
+                receiver: res.msg.CnickName,
+                content: res.msg.Describe,
+                contentId: 0,
+                contentType: "",
+                contentIndex: 0,
+                showReceiver: !!res.msg.CnickName,
+                shared: true
+              });
+              Object.assign(_this.musicInfo, {
+                id: "",
+                index: "",
+                url: res.msg.MusicUrl,
+                name: ""
+              });
+            });
+          }
+        });
+    }
 
-})
-}
-
-    util.http.get(_this.domainname + '/api/YearShow/GetHeKa').then(data => {
-      let res = data.data
-      if(res.msg){
-        _this.$apply(() => { // 相当于setData()
+    util.http.get(_this.domainname + "/api/YearShow/GetHeKa").then(data => {
+      let res = data.data;
+      if (res.msg) {
+        _this.$apply(() => {
+          // 相当于setData()
           // 初始化数据
           res.msg.personData.forEach(item => {
-            _this.cardText[item.name] = item.data
-            _this.cardText['cardTypes'].push({
+            _this.cardText[item.name] = item.data;
+            _this.cardText["cardTypes"].push({
               name: item.name
-            })
-          })
-          _this.musics = res.msg.music
-          if(_this.musics.length>0&&_this.musicInfo.url){
-          let idx=  _this.musics.findIndex(item=>item.url==_this.musicInfo.url);
-          console.log(idx);
-          if(idx>-1)
-          {
-            let musicItem=_this.musics[idx]
-            musicItem.index=idx
-  _this.musicInfo=  musicItem
-          }
-        
+            });
+          });
+          _this.musics = res.msg.music;
+          if (_this.musics.length > 0 && _this.musicInfo.url) {
+            let idx = _this.musics.findIndex(
+              item => item.url == _this.musicInfo.url
+            );
+            console.log(idx);
+            if (idx > -1) {
+              let musicItem = _this.musics[idx];
+              musicItem.index = idx;
+              _this.musicInfo = musicItem;
+            }
           }
           // push一个空，用户切换的时候可以切到无音乐状态
           _this.musics.push({
-            url: '',
-            name: '',
+            url: "",
+            name: "",
             id: null,
             index: null
-          })
+          });
 
-          if(id>0){
-             _this.editStatus = '2'
-             _this.activeToolBar = false
-             _this.isshare=true;
+          if (guid) {
+            _this.editStatus = "2";
+            _this.activeToolBar = false;
+            _this.isshare = true;
             // 根据当前分享参数初始化卡片内容和音乐
-           /* let contentId = _this.cardInfo.contentId, 
+            /* let contentId = _this.cardInfo.contentId, 
                 type = _this.cardInfo.contentType;
             _this.cardText[type].forEach((item, index) => {
               if(item.id == contentId) {
@@ -331,111 +367,122 @@ util.http.get(_this.domainname + '/api/YearShow/GetYearZhuFu',{id:id}).then(data
                 _this.cardInfo.contentType = type
               }
             })*/
-            if(_this.musicInfo.url){
+            if (_this.musicInfo.url) {
               // 播放
-              console.log('play', _this.musicInfo.url ? _this.domainname + _this.musicInfo.url : '')
-              _this.play=true
-              util.play(_this.musicInfo.url ? _this.domainname + _this.musicInfo.url : '')
+              console.log(
+                "play",
+                _this.musicInfo.url
+                  ? _this.domainname + _this.musicInfo.url
+                  : ""
+              );
+              _this.play = true;
+              util.play(
+                _this.musicInfo.url
+                  ? _this.domainname + _this.musicInfo.url
+                  : ""
+              );
             }
           } else {
-            _this.editStatus = '1'
-            _this.activeToolBar = true
-            _this.cardInfo.sender = _this.userInfo.nickName
+            _this.editStatus = "1";
+            _this.activeToolBar = true;
+            _this.cardInfo.sender = _this.userInfo.nickName;
           }
-        })
+        });
       }
-    })
+    });
   }
   methods = {
     touchStart: TouchEvent.start.bind(TouchEvent),
     touchMove: TouchEvent.move.bind(TouchEvent),
     touchEnd: TouchEvent.end.bind(TouchEvent),
-    inputContent(e){
-      const _this = this
-      let type = e.currentTarget.id
-      _this.$apply(() => { _this.cardInfo[type] = e.detail.value })
-      if(type == 'content'){
-        _this.cardInfo.hasEditSender = true
+    inputContent(e) {
+      const _this = this;
+      let type = e.currentTarget.id;
+      _this.$apply(() => {
+        _this.cardInfo[type] = e.detail.value;
+      });
+      if (type == "sender") {
+        _this.cardInfo.hasEditSender = true;
       }
     },
-    changeWords(e){
-      const _this = this
-      const domainname = _this.$parent.globalData.domainname
-      let type = util.touchInfo(e).type
-      if(type == _this.cardInfo.contentType){
-        if(_this.cardInfo.contentIndex == (_this.cardText[type].length - 1)){
-          _this.cardInfo.contentIndex = 0
+    changeWords(e) {
+      const _this = this;
+      const domainname = _this.$parent.globalData.domainname;
+      let type = util.touchInfo(e).type;
+      if (type == _this.cardInfo.contentType) {
+        if (_this.cardInfo.contentIndex == _this.cardText[type].length - 1) {
+          _this.cardInfo.contentIndex = 0;
         } else {
-          _this.cardInfo.contentIndex += 1
+          _this.cardInfo.contentIndex += 1;
         }
-        let index = _this.cardInfo.contentIndex
-        let card = _this.cardText[type][index] 
-        _this.cardInfo.content = card.content
-        _this.cardInfo.contentIndex = index
-        _this.cardInfo.contentLength = _this.cardText[type].length
+        let index = _this.cardInfo.contentIndex;
+        let card = _this.cardText[type][index];
+        _this.cardInfo.content = card.content;
+        _this.cardInfo.contentIndex = index;
+        _this.cardInfo.contentLength = _this.cardText[type].length;
       } else {
-        let card = _this.cardText[type][0]
-        _this.cardInfo.contentType = type
-        _this.cardInfo.contentId = card.id
-        _this.cardInfo.contentIndex = 0
-        _this.cardInfo.content = card.content
-        _this.cardInfo.contentLength = _this.cardText[type].length
+        let card = _this.cardText[type][0];
+        _this.cardInfo.contentType = type;
+        _this.cardInfo.contentId = card.id;
+        _this.cardInfo.contentIndex = 0;
+        _this.cardInfo.content = card.content;
+        _this.cardInfo.contentLength = _this.cardText[type].length;
       }
     },
-    changeMusic(){
-      const _this = this
-      const domainname = _this.$parent.globalData.domainname
+    changeMusic() {
+      const _this = this;
+      const domainname = _this.$parent.globalData.domainname;
       _this.$apply(() => {
         // 如果没有音乐，添加一个
-        if(!_this.musicInfo.url) {
-          _this.musicInfo = Object.assign({index: 0}, _this.musics[0])
+        if (!_this.musicInfo.url) {
+          _this.musicInfo = Object.assign({ index: 0 }, _this.musics[0]);
         } else {
-          let index = _this.musicInfo.index
-          if(index == _this.musics.length - 1){
-            index = 0
+          let index = _this.musicInfo.index;
+          if (index == _this.musics.length - 1) {
+            index = 0;
           } else {
-            index += 1
+            index += 1;
           }
-          _this.musicInfo = Object.assign({ index: index }, _this.musics[index])
+          _this.musicInfo = Object.assign(
+            { index: index },
+            _this.musics[index]
+          );
         }
-        _this.musicInfo.total = _this.musics.length
+        _this.musicInfo.total = _this.musics.length;
         // 播放
-         _this.play=true
-        util.play(_this.musicInfo.url ? domainname + _this.musicInfo.url : '')
-      })
+        _this.play = true;
+        util.play(_this.musicInfo.url ? domainname + _this.musicInfo.url : "");
+      });
     },
-    closeMusic(){
-       const _this = this
-     
+    closeMusic() {
+      const _this = this;
+
       _this.$apply(() => {
-        _this.play=!_this.play
+        _this.play = !_this.play;
         // 停止
-       util.stop(_this.play,_this.musicInfo)
-      })
- 
+        util.stop(_this.play, _this.musicInfo);
+      });
     },
-    preview () {
-      const _this = this
-      _this.cardInfo.showReceiver = !!_this.cardInfo.receiver
-      _this.activeToolBar = false
-      _this.editStatus = '2'
-      if(_this.cardInfo.content)
-      {
-       util.http.post(_this.domainname + '/api/YearShow/AddYearZhuFu',{SnickName:_this.cardInfo.sender,CnickName:_this.cardInfo.receiver,Describe:_this.cardInfo.content,MusicUrl:_this.musicInfo.url,BackUse:""}).then(data => {
-          _this.$apply(() => {
-        _this.id=data.data.msg
-      })
-       })
-       }
+    preview() {
+      const _this = this;
+      _this.cardInfo.showReceiver = !!_this.cardInfo.receiver;
+      _this.activeToolBar = false;
+      _this.editStatus = "2";
     },
-    modify () {
-      const _this = this
-      _this.cardInfo.showReceiver = true
-      _this.activeToolBar = true
-      _this.editStatus = '1'
-      _this.isshare = false
-      if(!_this.cardInfo.hasEditSender){
-        _this.cardInfo.sender = _this.cardInfo.sender ? _this.cardInfo.sender : _this.userInfo.nickName
+    modify() {
+      const _this = this;
+      _this.cardInfo.showReceiver = true;
+
+      // _this.$apply(() => {
+      //   _this.cardInfo.sender = _this.userInfo.nickName;
+      // });
+      _this.activeToolBar = true;
+      _this.editStatus = "1";
+      _this.isshare = false;
+      if (!_this.cardInfo.hasEditSender) {
+        _this.cardInfo.sender = _this.cardInfo.sender
+          ? _this.cardInfo.sender
+          : _this.userInfo.nickName;
       }
     }
   };
